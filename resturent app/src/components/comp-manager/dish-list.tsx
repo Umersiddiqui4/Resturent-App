@@ -1,7 +1,7 @@
 "use client"
 import { Edit, Trash } from "lucide-react"
 import { Button } from "../components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu-nav"
 import type { DishListProps } from "./types"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 

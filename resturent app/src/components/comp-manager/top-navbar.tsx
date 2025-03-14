@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Bell, Moon, Search, Settings, Sun, User } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -9,13 +9,41 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
+} from "../components/ui/dropdown-menu-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
-import { useTheme } from "../comp-manager/theme-provider"
+import { useTheme } from "./theme-provider"
+import { useAppContext } from "@/context/appContext"
+import { useNavigate } from "react-router-dom"
 
 export function TopNavbar() {
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [profileName, setProfileName] = useState("");
+
+const { activeUser, setActiveUser } = useAppContext();
+
+useEffect(() => {
+  if (activeUser?.name) {
+    const nameParts = activeUser.name.split(" "); // نام کو space پر توڑیں
+    const initials =
+      nameParts.length > 1
+        ? nameParts[0].charAt(0).toUpperCase() + nameParts[1].charAt(0).toUpperCase()
+        : nameParts[0].charAt(0).toUpperCase();
+    
+    setProfileName(initials);
+  }
+}, [activeUser]);
+
+
+console.log("profName", profileName);
+console.log(activeUser,"activetop");
+
+function logOut() {
+  localStorage.removeItem("activeUser"); // User data remove کریں
+  setActiveUser(null); // Context سے بھی user ہٹا دیں
+  navigate("/signin")
+}
 
   return (
     <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background px-4 md:px-6">
@@ -74,7 +102,7 @@ export function TopNavbar() {
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>{profileName ? profileName : "?" }</AvatarFallback>
               </Avatar>
               <span className="sr-only">User menu</span>
             </Button>
@@ -91,7 +119,7 @@ export function TopNavbar() {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={logOut}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

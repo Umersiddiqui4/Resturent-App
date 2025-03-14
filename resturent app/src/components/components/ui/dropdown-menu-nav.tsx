@@ -65,7 +65,7 @@ const DropdownMenuContent = React.forwardRef<
         className,
       )}
       style={{
-        transformOrigin: "var(--radix-dropdown-menu-content-transform-origin)",
+        transformOrigin: "var(--radix-dropdown-menu-content-transform-origin)"
       }}
       {...props}
     />

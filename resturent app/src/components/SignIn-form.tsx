@@ -10,12 +10,14 @@ import { ThemeToggle } from "./components/ui/Theme-toggle"
 import { Eye, EyeOff } from "lucide-react"
 import MuiSnackbar from "./components/ui/MuiSnackbar" // 🔄 Path check karo
 import { useNavigate } from "react-router-dom"
+import { useAppContext } from "@/context/appContext"
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
 }
 
 export default function SignIn({ className, ...props }: React.ComponentProps<"div">) {
+  const { activeUser, setActiveUser } = useAppContext();
   const navigate = useNavigate();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -47,7 +49,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
       if (foundUser) {
         if (foundUser.password === password) {
           localStorage.setItem("activeUser", JSON.stringify(foundUser))
-        
+          setActiveUser(foundUser)
           setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" })
           navigate("/")
         } else {
