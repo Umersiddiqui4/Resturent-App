@@ -7,42 +7,13 @@ import { cn } from "@/lib/utils"
 import type { DishListProps } from "../comp-manager/types"
 import type { Dish } from "../comp-manager/types"
 
-export function DishList({
-  dish,
-  onEdit,
-  onDelete,
-  onToggleWishlist,
-  isInWishlist = false,
-  onAddToCart,
-  isInCart = 0,
-  userRole,
-}: DishListProps) {
+export function DishList({ dish, onEdit, onDelete, onAddToCart, isInCart = 0, userRole, onClick }: DishListProps) {
   return (
-    <div className="flex items-center gap-4 rounded-lg border p-4">
+    <div className="flex items-center gap-4 rounded-lg border p-4 cursor-pointer" onClick={() => onClick && onClick()}>
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md">
         <img src={dish.image || "/placeholder.svg"} alt={dish.name} className="h-full w-full object-cover" />
-        {isInWishlist && (
-          <div className="absolute top-0 right-0 bg-red-500 rounded-bl-md p-0.5">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="white"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-            </svg>
-          </div>
-        )}
       </div>
-      <div
-        className={cn("flex-1 min-w-0", onToggleWishlist ? "cursor-pointer" : "")}
-        onClick={() => onToggleWishlist && onToggleWishlist(dish.id)}
-      >
+      <div className={cn("flex-1 min-w-0")}>
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">{dish.name}</h3>
           <span className="font-medium text-primary">${dish.price.toFixed(2)}</span>
@@ -50,7 +21,7 @@ export function DishList({
         <p className="text-sm text-muted-foreground line-clamp-1">{dish.description}</p>
         <span className="text-xs font-medium text-muted-foreground">{dish.category}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         {onAddToCart && (
           <Button
             variant="default"
@@ -58,7 +29,7 @@ export function DishList({
             className="bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
             onClick={(e) => {
               e.stopPropagation()
-              onAddToCart && onAddToCart(dish.id)
+              onAddToCart(dish.id)
             }}
           >
             {isInCart ? "Add Another" : "Add to Cart"}

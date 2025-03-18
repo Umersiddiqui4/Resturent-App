@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Bell, Moon, Search, Settings, Sun, User } from "lucide-react"
+import { Bell, Moon, Search, Settings, Sun, User, X } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import {
@@ -15,7 +15,15 @@ import { useTheme } from "./theme-provider"
 import { useAppContext } from "@/context/appContext"
 import { useNavigate } from "react-router-dom"
 
-export function TopNavbar() {
+
+
+interface TopNavbarProps {
+  onSearch?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  searchQuery?: string
+}
+
+
+export function TopNavbar({ onSearch, searchQuery = "" }: TopNavbarProps) {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -54,25 +62,23 @@ function logOut() {
               className="h-9 w-[200px] md:w-[300px]"
               placeholder="Search menu items..."
               autoFocus
-              onBlur={() => setSearchOpen(false)}
+              value={searchQuery}
+              onChange={onSearch}
             />
-            <Button variant="ghost" size="icon" className="ml-1" onClick={() => setSearchOpen(false)}>
-              <span className="sr-only">Close search</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-1"
+              onClick={() => {
+                if (onSearch) {
+                  const event = { target: { value: "" } } as React.ChangeEvent<HTMLInputElement>
+                  onSearch(event)
+                }
+                setSearchOpen(false)
+              }}
+            >
+              <span className="sr-only">Clear search</span>
+              <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (

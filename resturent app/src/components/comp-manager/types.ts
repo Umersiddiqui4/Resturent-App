@@ -8,15 +8,15 @@ export interface Dish {
   displayOrder: number
 }
 
+// Update the DishCardProps interface to remove wishlist props
 export interface DishCardProps {
   dish: Dish
   onEdit?: () => void
   onDelete?: () => void
-  onToggleWishlist?: (dishId: number) => void
-  isInWishlist?: boolean
   onAddToCart?: (dishId: number) => void
   isInCart?: number
   userRole?: "owner" | "user" | "guest"
+  onClick?: () => void
 }
 
 export interface DishListProps extends Omit<DishCardProps, "dish"> {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Home, UtensilsCrossed, Coffee, Pizza, Salad, Fish, Beef, Cake, ChevronDown } from "lucide-react"
+import { Home, UtensilsCrossed, Coffee, Pizza, Salad, Fish, Beef, Cake, ChevronDown ,ListFilter} from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Sidebar,
@@ -27,11 +27,13 @@ const categories = [
   { name: "Burgers", icon: Beef },
   { name: "Dessert", icon: Cake },
   { name: "Drinks", icon: Coffee },
+  { name: "Other", icon: ListFilter },
 ]
 
 export function AppSidebar() {
-  const [activeCategory, setActiveCategory] = useState("All Items")
+  const {activeCategory, setActiveCategory} = useAppContext()
   const { activeUser, setActiveUser } = useAppContext();
+  
   
 
   return (

@@ -4,6 +4,8 @@ import { createContext, useContext, useState, ReactNode } from "react";
 interface AppContextType {
     activeUser: string | null;
   setActiveUser: (user: string | null) => void;
+  activeCategory: string | null;
+  setActiveCategory: (category: string | null) => void;
 }
 
 // 2️⃣ Default Value (Initial State)
@@ -12,9 +14,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 // 3️⃣ Context Provider Component
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activeUser, setActiveUser] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   return (
-    <AppContext.Provider value={{ activeUser, setActiveUser }}>
+    <AppContext.Provider value={{  activeUser, setActiveUser, activeCategory, setActiveCategory}}>
       {children}
     </AppContext.Provider>
   );

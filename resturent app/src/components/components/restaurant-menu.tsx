@@ -36,7 +36,9 @@ import { Badge } from "./ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Checkbox } from "./ui/checkbox"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { useAppContext } from "@/context/appContext"
+import imageSVG from "../../assets/image.svg"
 
 // Sample dish data
 const initialDishes: Dish[] = [
@@ -46,7 +48,7 @@ const initialDishes: Dish[] = [
     description: "Classic pizza with tomato sauce, mozzarella, and basil",
     price: 12.99,
     category: "Pizza",
-    image: "/placeholder.svg?height=200&width=200",
+    image: "https://img.taste.com.au/Anr9L8A_/taste/2018/08/hawaiian-pizza-pasta-bake_1908x1320-140399-1.jpg",
     displayOrder: 1,
   },
   {
@@ -55,7 +57,7 @@ const initialDishes: Dish[] = [
     description: "Pasta with eggs, cheese, pancetta, and black pepper",
     price: 14.99,
     category: "Pasta",
-    image: "/placeholder.svg?height=200&width=200",
+    image: "https://s.lightorangebean.com/media/20240914160809/Spicy-Penne-Pasta_-done.png",
     displayOrder: 2,
   },
   {
@@ -64,58 +66,14 @@ const initialDishes: Dish[] = [
     description: "Romaine lettuce, croutons, parmesan cheese, and Caesar dressing",
     price: 9.99,
     category: "Salad",
-    image: "/placeholder.svg?height=200&width=200",
+    image: "https://images.immediate.co.uk/production/volatile/sites/30/2014/05/Epic-summer-salad-hub-2646e6e.jpg?resize=768,574",
     displayOrder: 3,
   },
-  {
-    id: 4,
-    name: "Grilled Salmon",
-    description: "Fresh salmon fillet with lemon butter sauce and seasonal vegetables",
-    price: 18.99,
-    category: "Seafood",
-    image: "/placeholder.svg?height=200&width=200",
-    displayOrder: 4,
-  },
-  {
-    id: 5,
-    name: "Beef Burger",
-    description: "Angus beef patty with lettuce, tomato, cheese, and special sauce",
-    price: 13.99,
-    category: "Burgers",
-    image: "/placeholder.svg?height=200&width=200",
-    displayOrder: 5,
-  },
-  {
-    id: 6,
-    name: "Chocolate Cake",
-    description: "Rich chocolate cake with ganache frosting",
-    price: 7.99,
-    category: "Dessert",
-    image: "/placeholder.svg?height=200&width=200",
-    displayOrder: 6,
-  },
-  {
-    id: 7,
-    name: "Cappuccino",
-    description: "Espresso with steamed milk and foam",
-    price: 4.99,
-    category: "Drinks",
-    image: "/placeholder.svg?height=200&width=200",
-    displayOrder: 7,
-  },
-  {
-    id: 8,
-    name: "Pepperoni Pizza",
-    description: "Classic pizza with tomato sauce, mozzarella, and pepperoni",
-    price: 14.99,
-    category: "Pizza",
-    image: "/placeholder.svg?height=200&width=200",
-    displayOrder: 8,
-  },
+ 
+  
 ]
 
 export function RestaurantMenu() {
-    const { activeUser, setActiveUser } = useAppContext();
   const [dishes, setDishes] = useState<Dish[]>(initialDishes)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [newDish, setNewDish] = useState<Omit<Dish, "id" | "displayOrder">>({
@@ -123,34 +81,60 @@ export function RestaurantMenu() {
     description: "",
     price: 0,
     category: "",
-    image: "/placeholder.svg?height=200&width=200",
+    image: "https://kzmg31jtwsx06gw4knkz.lite.vusercontent.net/placeholder.svg",
   })
   const [editingDish, setEditingDish] = useState<Dish | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [wishlist, setWishlist] = useState<number[]>([])
   const [cart, setCart] = useState<Record<number, number>>({})
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
+  const [userRole, setUserRole] = useState<"owner" | "user" | "guest">("user")
   const [isDragging, setIsDragging] = useState(false)
-  const [userRole, setUserRole] = useState("user")
-  
-  
-  // Add a function to toggle between user roles (for demonstration purposes)
+
+  // Add these new state variables after the other useState declarations
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [rating, setRating] = useState<number | null>(null)
+  const [comment, setComment] = useState("")
+  const [dishRatings, setDishRatings] = useState<Record<number, { rating: number; comment: string }>>({})
+
+
+  const { activeUser, setActiveUser } = useAppContext();
+  const { activeCategory, setActiveCategory } = useAppContext();
+
   const getUserRole = (activeUser: { restaurantName?: string }) => {
     return activeUser?.restaurantName ? "owner" : "user";
   };
-  
+
+
   useEffect(() => {
     const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
     setActiveUser(storedOwners);
     setUserRole(getUserRole(storedOwners)); // `storedOwners` استعمال کریں، `activeUser` نہیں
-  }, []); // `activeUser` کو dependencies میں شامل نہ کریں
-  console.log(activeUser,"active");
-  
+  },[]); // `activeUser` کو dependencies میں شامل نہ کریں
+  console.log(activeCategory,"activeCAT");
+
+  useEffect(() => {
+    const storedDishes = JSON.parse(localStorage.getItem("dishes") || "null") || initialDishes;
+    setDishes(storedDishes);
+    handleCategorySelectForSideBaR();
+  }, [activeCategory]);
+
+
+  const toggleUserRole = () => {
+    setUserRole((prev) => {
+      if (prev === "owner") return "user"
+      if (prev === "user") return "guest"
+      return "owner"
+    })
+  }
+
+  console.log(dishes,"dishes");
+
   // Sort dishes by display order when in custom sort mode
   useEffect(() => {
     if (sortOrder === "custom") {
@@ -171,9 +155,10 @@ export function RestaurantMenu() {
       }
 
       // Category filter
-      if (selectedCategory && dish.category !== selectedCategory) {
-        return false
-      }
+      if (selectedCategory && selectedCategory !== "All Items" && dish.category !== selectedCategory) {
+        return false;
+    }
+    
 
       // Price range filter
       if (dish.price < priceRange[0] || dish.price > priceRange[1]) {
@@ -195,18 +180,23 @@ export function RestaurantMenu() {
       }
     })
 
+  // Modify the handleAddDish function to save the image to localStorage
   const handleAddDish = () => {
-    const newId = dishes.length > 0 ? Math.max(...dishes.map((dish) => dish.id)) + 1 : 1
-    const maxDisplayOrder = dishes.length > 0 ? Math.max(...dishes.map((dish) => dish.displayOrder)) : 0
+    const newId = dishes.length > 0 ? Math.max(...dishes.map((dish) => dish.id)) + 1 : 1;
+    const maxDisplayOrder = dishes.length > 0 ? Math.max(...dishes.map((dish) => dish.displayOrder)) : 0;
 
     const newDishWithId = {
       ...newDish,
       id: newId,
       displayOrder: maxDisplayOrder + 1,
-    }
+    };
 
     // Update dishes state with the new dish
-    setDishes((prevDishes) => [...prevDishes, newDishWithId])
+    const updatedDishes = [...dishes, newDishWithId];
+    setDishes(updatedDishes);
+
+    // ✅ Save all dishes to localStorage
+    localStorage.setItem("dishes", JSON.stringify(updatedDishes));
 
     // Reset the newDish form
     setNewDish({
@@ -214,37 +204,56 @@ export function RestaurantMenu() {
       description: "",
       price: 0,
       category: "",
-      image: "/placeholder.svg?height=200&width=200",
-    })
+      image: "https://kzmg31jtwsx06gw4knkz.lite.vusercontent.net/placeholder.svg",
+    });
 
-    setIsAddDialogOpen(false)
-  }
+    setIsAddDialogOpen(false);
+};
+console.log(imageSVG);
 
+  // Modify the handleEditDish function to save the updated image to localStorage
   const handleEditDish = () => {
     if (editingDish) {
-      setDishes(dishes.map((dish) => (dish.id === editingDish.id ? editingDish : dish)))
-      setIsEditDialogOpen(false)
-      setEditingDish(null)
+      // اگر نئی امیج بیس64 فارمیٹ میں ہے تو اسے لوکل اسٹوریج میں محفوظ کریں
+      if (editingDish.image && editingDish.image.startsWith("data:")) {
+        localStorage.setItem(`dish-image-${editingDish.id}`, editingDish.image);
+      }
+  
+      // نیا ڈش لسٹ اپڈیٹ کریں
+      const updatedDishes = dishes.map((dish) =>
+        dish.id === editingDish.id ? editingDish : dish
+      );
+  
+      setDishes(updatedDishes); // اسٹیٹ اپڈیٹ کریں
+      localStorage.setItem("dishes", JSON.stringify(updatedDishes)); // لوکل اسٹوریج اپڈیٹ کریں
+  
+      // ڈائیلاگ بند کریں اور ایڈٹنگ ڈش کو ری سیٹ کریں
+      setIsEditDialogOpen(false);
+      setEditingDish(null);
     }
-  }
-
+  };
+  
+  // Modify the handleDeleteDish function to remove the image from localStorage
   const handleDeleteDish = (id: number) => {
-    setDishes(dishes.filter((dish) => dish.id !== id))
-  }
+    // لوکل اسٹوریج سے امیج کو ہٹا دیں
+    localStorage.removeItem(`dish-image-${id}`);
+  
+    const updatedDishes = dishes.filter((dish) => dish.id !== id);
+  
+    // اسٹیٹ کو اپڈیٹ کریں
+    setDishes(updatedDishes);
+  
+    // لوکل اسٹوریج کو بھی اپڈیٹ کریں
+    localStorage.setItem("dishes", JSON.stringify(updatedDishes));
+  };
+  
 
   const openEditDialog = (dish: Dish) => {
     setEditingDish(dish)
     setIsEditDialogOpen(true)
   }
 
-  const toggleWishlist = (dishId: number) => {
-    if (wishlist.includes(dishId)) {
-      setWishlist(wishlist.filter((id) => id !== dishId))
-    } else {
-      setWishlist([...wishlist, dishId])
-    }
-  }
-
+  // Remove toggleWishlist function
   const addToCart = (dishId: number) => {
     setCart((prev) => ({
       ...prev,
@@ -268,8 +277,14 @@ export function RestaurantMenu() {
     setSearchQuery(e.target.value)
   }
 
+  const handleCategorySelectForSideBaR = () => {
+    setSelectedCategory(activeCategory)
+
+  }
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category)
+    setActiveCategory(category)
+
   }
 
   const clearFilters = () => {
@@ -281,8 +296,16 @@ export function RestaurantMenu() {
   }
 
   // Update this line to ensure it includes categories from newly added dishes
-  const categories = Array.from(new Set(dishes.map((dish) => dish.category))).filter(Boolean)
-
+  const categories = [
+    "Pizza",
+    "Pasta",
+    "Salad",
+    "Seafood",
+    "Burgers",
+    "Dessert",
+    "Drinks"
+  ];
+  
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
     setIsDragging(false)
@@ -329,11 +352,93 @@ export function RestaurantMenu() {
 
     setDishes(allDishesUpdated)
     setSortOrder("custom")
+
+    localStorage.setItem("dishes", JSON.stringify(allDishesUpdated));
+
   }
 
   // Handle drag start event
   const handleDragStart = () => {
     setIsDragging(true)
+  }
+
+  // Add this function to handle opening the detail modal
+  const openDishDetail = (dish: Dish) => {
+    setSelectedDish(dish)
+    setRating(dishRatings[dish.id]?.rating || null)
+    setComment(dishRatings[dish.id]?.comment || "")
+    setIsDetailModalOpen(true)
+  }
+
+  // Add this function to handle saving ratings and comments
+ const saveRatingAndComment = () => {
+  if (selectedDish && rating) {
+    // Get existing feedback from localStorage
+    const existingFeedback = JSON.parse(localStorage.getItem("feedback") || "{}");
+
+    // Create new feedback object
+    const newFeedback = {
+      ...existingFeedback,
+      [selectedDish.id]: { rating, comment, selectedDish },
+    };
+
+    // Save updated feedback to localStorage
+    localStorage.setItem("feedback", JSON.stringify(newFeedback));
+
+    // Update state
+    setDishRatings(newFeedback);
+    setIsDetailModalOpen(false);
+  }
+};
+
+
+  // Add a function to load images from localStorage
+  const loadImagesFromLocalStorage = () => {
+    setDishes((prevDishes) =>
+      prevDishes.map((dish) => {
+        const savedImage = localStorage.getItem(`dish-image-${dish.id}`)
+        if (savedImage) {
+          return { ...dish, image: savedImage }
+        }
+        return dish
+      }),
+    )
+  }
+
+  // Add useEffect to load images when component mounts
+  useEffect(() => {
+    loadImagesFromLocalStorage()
+  }, [])
+
+  // Add these functions at the end of the component, before the final closing brace
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const imageDataUrl = reader.result as string
+        setNewDish({ ...newDish, image: imageDataUrl })
+
+        // Save to localStorage
+        localStorage.setItem(`dish-image-temp`, imageDataUrl)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  function handleEditImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file && editingDish) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const imageDataUrl = reader.result as string
+        setEditingDish({ ...editingDish, image: imageDataUrl })
+
+        // Save to localStorage
+        localStorage.setItem(`dish-image-${editingDish.id}`, imageDataUrl)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   return (
@@ -348,7 +453,9 @@ export function RestaurantMenu() {
               <Badge variant={userRole === "owner" ? "destructive" : userRole === "user" ? "default" : "outline"}>
                 {userRole === "owner" ? "Owner" : userRole === "user" ? "User" : "Guest"}
               </Badge>
-              
+              <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
+                Switch Role
+              </Button>
             </div>
 
             {/* Filter and Sort Controls */}
@@ -376,7 +483,7 @@ export function RestaurantMenu() {
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="all" disabled>All Categories</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
@@ -513,6 +620,17 @@ export function RestaurantMenu() {
                         </Select>
                       </div>
                     </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="image">Image</Label>
+                      <Input type="file" id="image" accept="image/*" onChange={handleImageChange} />
+                      {newDish.image && (
+                        <img
+                          src={newDish.image || "/placeholder.svg"}
+                          alt="Preview"
+                          className="mt-2 h-20 w-20 rounded-md object-cover"
+                        />
+                      )}
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -585,36 +703,40 @@ export function RestaurantMenu() {
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                       >
-                        {filteredDishes.map((dish, index) => (
-                          <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`${snapshot.isDragging ? "opacity-70" : ""}`}
-                              >
-                                <div className="relative">
-                                  <div
-                                    {...provided.dragHandleProps}
-                                    className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
-                                  >
-                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                  </div>
-                                  <DishCard
-                                    dish={dish}
-                                    onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
-                                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
-                                    onToggleWishlist={userRole !== "owner" ? toggleWishlist : undefined}
-                                    isInWishlist={userRole !== "owner" && wishlist.includes(dish.id)}
-                                    onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                                    isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                                    userRole={userRole}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+               {filteredDishes.map((dish, index) => {
+  console.log(`Dish ${index}:`, dish);
+  
+  return (
+    <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={`${snapshot.isDragging ? "opacity-70" : ""}`}
+        >
+          <div className="relative">
+            <div
+              {...provided.dragHandleProps}
+              className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <DishCard
+              dish={dish}
+              onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
+              onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
+              onAddToCart={userRole !== "owner" ? addToCart : undefined}
+              isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
+              userRole={userRole}
+              onClick={() => openDishDetail(dish)}
+            />
+          </div>
+        </div>
+      )}
+    </Draggable>
+  );
+})}
+
                         {provided.placeholder}
                       </div>
                     )}
@@ -622,19 +744,18 @@ export function RestaurantMenu() {
                 </DragDropContext>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredDishes.map((dish) => (
+                  {filteredDishes.map((dish) => {   console.log(dish,'dishmap');  return (
                     <DishCard
                       key={dish.id}
                       dish={dish}
                       onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
                       onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
-                      onToggleWishlist={userRole !== "owner" ? toggleWishlist : undefined}
-                      isInWishlist={userRole !== "owner" && wishlist.includes(dish.id)}
                       onAddToCart={userRole !== "owner" ? addToCart : undefined}
                       isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
                       userRole={userRole}
+                      onClick={() => openDishDetail(dish)}
                     />
-                  ))}
+                  )})}
                 </div>
               )
             ) : userRole === "owner" && sortOrder === "custom" ? (
@@ -662,11 +783,10 @@ export function RestaurantMenu() {
                                     dish={dish}
                                     onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
                                     onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
-                                    onToggleWishlist={userRole !== "owner" ? toggleWishlist : undefined}
-                                    isInWishlist={userRole !== "owner" && wishlist.includes(dish.id)}
                                     onAddToCart={userRole !== "owner" ? addToCart : undefined}
                                     isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
                                     userRole={userRole}
+                                    onClick={() => openDishDetail(dish)}
                                   />
                                 </div>
                               </div>
@@ -687,11 +807,10 @@ export function RestaurantMenu() {
                     dish={dish}
                     onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
                     onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
-                    onToggleWishlist={userRole !== "owner" ? toggleWishlist : undefined}
-                    isInWishlist={userRole !== "owner" && wishlist.includes(dish.id)}
                     onAddToCart={userRole !== "owner" ? addToCart : undefined}
                     isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
                     userRole={userRole}
+                    onClick={() => openDishDetail(dish)}
                   />
                 ))}
               </div>
@@ -720,7 +839,7 @@ export function RestaurantMenu() {
                 >
                   <circle cx="8" cy="21" r="1" />
                   <circle cx="19" cy="21" r="1" />
-                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
                 </svg>
                 Cart
                 <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
@@ -880,6 +999,17 @@ export function RestaurantMenu() {
                   </Select>
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-image">Image</Label>
+                <Input type="file" id="edit-image" accept="image/*" onChange={handleEditImageChange} />
+                {editingDish.image && (
+                  <img
+                    src={editingDish.image || "/placeholder.svg"}
+                    alt="Preview"
+                    className="mt-2 h-20 w-20 rounded-md object-cover"
+                  />
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -888,6 +1018,74 @@ export function RestaurantMenu() {
             </Button>
             <Button onClick={handleEditDish}>Save Changes</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add the detail modal at the end of the component, just before the final closing tag */}
+      {/* Dish Detail Modal */}
+
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          {selectedDish && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedDish.name}</DialogTitle>
+                <DialogDescription>
+                  {selectedDish.category} - ${selectedDish.price.toFixed(2)}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-4 py-4">
+                <div className="relative h-48 w-full overflow-hidden rounded-md">
+                  <img
+                    src={selectedDish.image || "/placeholder.svg"}
+                    alt={selectedDish.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+
+                <p className="text-sm text-muted-foreground">{selectedDish.description}</p>
+
+                <div className="border-t pt-4">
+                  <h4 className="mb-2 font-medium">Rate this dish</h4>
+                  <RadioGroup
+                    value={rating?.toString() || ""}
+                    onValueChange={(value) => setRating(Number.parseInt(value))}
+                    className="flex space-x-4 mb-4"
+                  >
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <div key={value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={value.toString()} id={`rating-${value}`} />
+                        <Label htmlFor={`rating-${value}`} className="text-sm">
+                          {value} {value === 1 ? "Star" : "Stars"}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="comment">Comments</Label>
+                    <Textarea
+                      id="comment"
+                      placeholder="Share your thoughts about this dish..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={saveRatingAndComment} disabled={!rating}>
+                  Save Rating
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </SidebarProvider>
