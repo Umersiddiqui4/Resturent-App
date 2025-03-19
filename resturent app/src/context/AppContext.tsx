@@ -1,14 +1,14 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
-// 1️⃣ Context ka Type Define karna zaroori hai (TypeScript me)
+// 1️⃣ Context Type Define
 interface AppContextType {
-    activeUser: string | null;
+  activeUser: string | null;
   setActiveUser: (user: string | null) => void;
   activeCategory: string | null;
   setActiveCategory: (category: string | null) => void;
 }
 
-// 2️⃣ Default Value (Initial State)
+// 2️⃣ Default Context Value
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // 3️⃣ Context Provider Component
@@ -17,7 +17,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   return (
-    <AppContext.Provider value={{  activeUser, setActiveUser, activeCategory, setActiveCategory}}>
+    <AppContext.Provider value={{ activeUser, setActiveUser, activeCategory, setActiveCategory }}>
       {children}
     </AppContext.Provider>
   );

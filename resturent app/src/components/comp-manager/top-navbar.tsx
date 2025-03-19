@@ -21,7 +21,9 @@ interface TopNavbarProps {
   onSearch?: (e: React.ChangeEvent<HTMLInputElement>) => void
   searchQuery?: string
 }
-
+interface User {
+  name?: string;
+}
 
 export function TopNavbar({ onSearch, searchQuery = "" }: TopNavbarProps) {
   const navigate = useNavigate();

@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "./components/ui/avatar"
+import { Avatar, AvatarImage } from "./components/ui/avatar"
 import { Card, CardContent } from "./components/ui/card"
 import { Separator } from "./components/ui/separator"
 import { Star } from "lucide-react"
-import { ThemeToggle } from "./components/theme-provider"
 
 interface Review {
   id: string
@@ -21,11 +20,18 @@ interface CustomerReviewsProps {
   reviews: Review[]
   title?: string
 }
+interface Dish {
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+}
 interface Feedback {
   id: number;
   user: string;
   rating: number;
   comment: string;
+  selectedDish: Dish
 }
 
 export default function Customer({
