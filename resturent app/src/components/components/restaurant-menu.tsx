@@ -39,6 +39,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { useAppContext } from "@/context/appContext"
 import imageSVG from "../../assets/image.svg"
+import { useNavigate } from "react-router-dom"
 
 // Sample dish data
 const initialDishes: Dish[] = [
@@ -69,14 +70,14 @@ const initialDishes: Dish[] = [
     image: "https://images.immediate.co.uk/production/volatile/sites/30/2014/05/Epic-summer-salad-hub-2646e6e.jpg?resize=768,574",
     displayOrder: 3,
   },
- 
-  
+
+
 ]
 
 export function RestaurantMenu() {
   const [dishes, setDishes] = useState<Dish[]>(initialDishes)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [newDish, setNewDish] = useState<Omit<Dish, "id" | "displayOrder">>({
+  const [newDish, setNewDish] = useState<Omit<Dish, "id" | "displayOrder" | "restaurent">>({
     name: "",
     description: "",
     price: 0,
@@ -94,7 +95,8 @@ export function RestaurantMenu() {
   const [showVegetarian, setShowVegetarian] = useState(false)
   const [userRole, setUserRole] = useState<"owner" | "user" | "guest">("user")
   const [isDragging, setIsDragging] = useState(false)
-
+  const [activeRestaurant, setActiveRestaurant] = useState("")
+  const navigate = useNavigate();
   // Add these new state variables after the other useState declarations
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
@@ -115,12 +117,13 @@ export function RestaurantMenu() {
     const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
     setActiveUser(storedOwners);
     setUserRole(getUserRole(storedOwners)); // `storedOwners` استعمال کریں، `activeUser` نہیں
-  },[]); // `activeUser` کو dependencies میں شامل نہ کریں
-  console.log(activeCategory,"activeCAT");
+  }, []); // `activeUser` کو dependencies میں شامل نہ کریں
 
   useEffect(() => {
-    const storedDishes = JSON.parse(localStorage.getItem("dishes") || "null") || initialDishes;
+    const storedDishes = JSON.parse(localStorage.getItem("dishes") || "[]");
+    const storedrestaurant = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
     setDishes(storedDishes);
+    setActiveRestaurant(storedrestaurant);
     handleCategorySelectForSideBaR();
   }, [activeCategory]);
 
@@ -133,7 +136,6 @@ export function RestaurantMenu() {
     })
   }
 
-  console.log(dishes,"dishes");
 
   // Sort dishes by display order when in custom sort mode
   useEffect(() => {
@@ -145,40 +147,43 @@ export function RestaurantMenu() {
   // Filter and sort dishes
   const filteredDishes = dishes
     .filter((dish) => {
+      // Restaurant filter
+      if (
+        (activeUser?.restaurantName ?? activeRestaurant) !== dish.restaurent
+      ) {
+        return false;
+      }
+      
+
       // Search query filter
       if (
         searchQuery &&
         !dish.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !dish.description.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
-        return false
+        return false;
       }
 
       // Category filter
       if (selectedCategory && selectedCategory !== "All Items" && dish.category !== selectedCategory) {
         return false;
-    }
-    
-
-      // Price range filter
-      if (dish.price < priceRange[0] || dish.price > priceRange[1]) {
-        return false
       }
 
-      return true
+      return true;
     })
     .sort((a, b) => {
       if (sortOrder === "name") {
-        return a.name.localeCompare(b.name)
+        return a.name.localeCompare(b.name);
       } else if (sortOrder === "price-asc") {
-        return a.price - b.price
+        return a.price - b.price;
       } else if (sortOrder === "price-desc") {
-        return b.price - a.price
+        return b.price - a.price;
       } else {
         // Custom order (by displayOrder)
-        return a.displayOrder - b.displayOrder
+        return a.displayOrder - b.displayOrder;
       }
-    })
+    });
+
 
   // Modify the handleAddDish function to save the image to localStorage
   const handleAddDish = () => {
@@ -189,6 +194,7 @@ export function RestaurantMenu() {
       ...newDish,
       id: newId,
       displayOrder: maxDisplayOrder + 1,
+      restaurent: activeUser?.restaurantName
     };
 
     // Update dishes state with the new dish
@@ -208,8 +214,7 @@ export function RestaurantMenu() {
     });
 
     setIsAddDialogOpen(false);
-};
-console.log(imageSVG);
+  };
 
   // Modify the handleEditDish function to save the updated image to localStorage
   const handleEditDish = () => {
@@ -218,35 +223,35 @@ console.log(imageSVG);
       if (editingDish.image && editingDish.image.startsWith("data:")) {
         localStorage.setItem(`dish-image-${editingDish.id}`, editingDish.image);
       }
-  
+
       // نیا ڈش لسٹ اپڈیٹ کریں
       const updatedDishes = dishes.map((dish) =>
         dish.id === editingDish.id ? editingDish : dish
       );
-  
+
       setDishes(updatedDishes); // اسٹیٹ اپڈیٹ کریں
       localStorage.setItem("dishes", JSON.stringify(updatedDishes)); // لوکل اسٹوریج اپڈیٹ کریں
-  
+
       // ڈائیلاگ بند کریں اور ایڈٹنگ ڈش کو ری سیٹ کریں
       setIsEditDialogOpen(false);
       setEditingDish(null);
     }
   };
-  
+
   // Modify the handleDeleteDish function to remove the image from localStorage
   const handleDeleteDish = (id: number) => {
     // لوکل اسٹوریج سے امیج کو ہٹا دیں
     localStorage.removeItem(`dish-image-${id}`);
-  
+
     const updatedDishes = dishes.filter((dish) => dish.id !== id);
-  
+
     // اسٹیٹ کو اپڈیٹ کریں
     setDishes(updatedDishes);
-  
+
     // لوکل اسٹوریج کو بھی اپڈیٹ کریں
     localStorage.setItem("dishes", JSON.stringify(updatedDishes));
   };
-  
+
 
   const openEditDialog = (dish: Dish) => {
     setEditingDish(dish)
@@ -305,7 +310,7 @@ console.log(imageSVG);
     "Dessert",
     "Drinks"
   ];
-  
+
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
     setIsDragging(false)
@@ -371,25 +376,25 @@ console.log(imageSVG);
   }
 
   // Add this function to handle saving ratings and comments
- const saveRatingAndComment = () => {
-  if (selectedDish && rating) {
-    // Get existing feedback from localStorage
-    const existingFeedback = JSON.parse(localStorage.getItem("feedback") || "{}");
+  const saveRatingAndComment = () => {
+    if (selectedDish && rating) {
+      // Get existing feedback from localStorage
+      const existingFeedback = JSON.parse(localStorage.getItem("feedback") || "{}");
 
-    // Create new feedback object
-    const newFeedback = {
-      ...existingFeedback,
-      [selectedDish.id]: { rating, comment, selectedDish },
-    };
+      // Create new feedback object
+      const newFeedback = {
+        ...existingFeedback,
+        [selectedDish.id]: { rating, comment, selectedDish },
+      };
 
-    // Save updated feedback to localStorage
-    localStorage.setItem("feedback", JSON.stringify(newFeedback));
+      // Save updated feedback to localStorage
+      localStorage.setItem("feedback", JSON.stringify(newFeedback));
 
-    // Update state
-    setDishRatings(newFeedback);
-    setIsDetailModalOpen(false);
-  }
-};
+      // Update state
+      setDishRatings(newFeedback);
+      setIsDetailModalOpen(false);
+    }
+  };
 
 
   // Add a function to load images from localStorage
@@ -411,35 +416,59 @@ console.log(imageSVG);
   }, [])
 
   // Add these functions at the end of the component, before the final closing brace
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const imageDataUrl = reader.result as string
-        setNewDish({ ...newDish, image: imageDataUrl })
-
-        // Save to localStorage
-        localStorage.setItem(`dish-image-temp`, imageDataUrl)
+      try {
+        const imageUrl = await saveImageToIndexedDB(file); // IndexedDB mein save kar ke URL lo
+        setNewDish({ ...newDish, image: imageUrl });
+      } catch (error) {
+        console.error("Error saving image:", error);
       }
-      reader.readAsDataURL(file)
     }
   }
 
-  function handleEditImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file && editingDish) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const imageDataUrl = reader.result as string
-        setEditingDish({ ...editingDish, image: imageDataUrl })
 
-        // Save to localStorage
-        localStorage.setItem(`dish-image-${editingDish.id}`, imageDataUrl)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+  const saveImageToIndexedDB = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("myDatabase", 1);
+
+      request.onupgradeneeded = (event: any) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains("images")) {
+          db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
+        }
+      };
+
+      request.onsuccess = (event: any) => {
+        const db = event.target.result;
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          const transaction = db.transaction("images", "readwrite"); // Transaction ko yahan banaya
+          const store = transaction.objectStore("images");
+
+          const data = { image: reader.result };
+          const addRequest = store.add(data);
+
+          addRequest.onsuccess = () => {
+            resolve(reader.result as string);
+          };
+
+          addRequest.onerror = () => reject(addRequest.error);
+        };
+
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  };
+
+
+
+
 
   return (
     <SidebarProvider>
@@ -703,39 +732,38 @@ console.log(imageSVG);
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                       >
-               {filteredDishes.map((dish, index) => {
-  console.log(`Dish ${index}:`, dish);
-  
-  return (
-    <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          className={`${snapshot.isDragging ? "opacity-70" : ""}`}
-        >
-          <div className="relative">
-            <div
-              {...provided.dragHandleProps}
-              className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <DishCard
-              dish={dish}
-              onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
-              onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
-              onAddToCart={userRole !== "owner" ? addToCart : undefined}
-              isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-              userRole={userRole}
-              onClick={() => openDishDetail(dish)}
-            />
-          </div>
-        </div>
-      )}
-    </Draggable>
-  );
-})}
+                        {filteredDishes.map((dish, index) => {
+
+                          return (
+                            <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`${snapshot.isDragging ? "opacity-70" : ""}`}
+                                >
+                                  <div className="relative">
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
+                                    >
+                                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                    <DishCard
+                                      dish={dish}
+                                      onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
+                                      onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
+                                      onAddToCart={userRole !== "owner" ? addToCart : undefined}
+                                      isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
+                                      userRole={userRole}
+                                      onClick={() => openDishDetail(dish)}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
 
                         {provided.placeholder}
                       </div>
@@ -744,18 +772,20 @@ console.log(imageSVG);
                 </DragDropContext>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredDishes.map((dish) => {   console.log(dish,'dishmap');  return (
-                    <DishCard
-                      key={dish.id}
-                      dish={dish}
-                      onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
-                      onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
-                      onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                      isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                      userRole={userRole}
-                      onClick={() => openDishDetail(dish)}
-                    />
-                  )})}
+                  {filteredDishes.map((dish) => {
+                    return (
+                      <DishCard
+                        key={dish.id}
+                        dish={dish}
+                        onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
+                        onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
+                        onAddToCart={userRole !== "owner" ? addToCart : undefined}
+                        isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
+                        userRole={userRole}
+                        onClick={() => openDishDetail(dish)}
+                      />
+                    )
+                  })}
                 </div>
               )
             ) : userRole === "owner" && sortOrder === "custom" ? (
@@ -1001,7 +1031,7 @@ console.log(imageSVG);
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-image">Image</Label>
-                <Input type="file" id="edit-image" accept="image/*" onChange={handleEditImageChange} />
+                <Input type="file" id="edit-image" accept="image/*" onChange={handleImageChange} />
                 {editingDish.image && (
                   <img
                     src={editingDish.image || "/placeholder.svg"}
@@ -1082,6 +1112,9 @@ console.log(imageSVG);
                 </Button>
                 <Button onClick={saveRatingAndComment} disabled={!rating}>
                   Save Rating
+                </Button>
+                <Button onClick={() => {navigate("/customer")}} disabled={!rating}>
+                Feedback
                 </Button>
               </DialogFooter>
             </>

@@ -10,6 +10,7 @@ import { ThemeToggle } from "./components/ui/Theme-toggle"
 import { Eye, EyeOff } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
+import { useAppContext } from "@/context/appContext"
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
@@ -25,7 +26,9 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     email: "",
     password: "",
     restaurantName: "",
+    role: "owner"
   })
+  const { activeUser, setActiveUser } = useAppContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -33,7 +36,6 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Submitting Form Data:", formData)
 
     const usersKey = accountType === "owner" ? "owners" : "users"
     const existingUsers = JSON.parse(localStorage.getItem(usersKey) || "[]")
@@ -45,13 +47,20 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
       return
     }
 
-    const userData = accountType === "owner" ? { ...formData } : { name: formData.name, email: formData.email, password: formData.password }
+    const userData = accountType === "owner" ? { ...formData } : { name: formData.name, email: formData.email, password: formData.password, role: "user" }
     const updatedUsers = [...existingUsers, userData]
     localStorage.setItem(usersKey, JSON.stringify(updatedUsers))
     localStorage.setItem("activeUser", JSON.stringify(userData))
-
+    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+      setActiveUser(storedOwners)
     setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" })
-    setTimeout(() => navigate("/"), 1500)
+    setTimeout(() => { 
+      if(activeUser?.role === "owner"){
+        navigate("/")
+      }else if(activeUser?.role === "user"){
+        navigate("/restaurent-selection")
+      }
+    } , 500)
   }
 
   return (

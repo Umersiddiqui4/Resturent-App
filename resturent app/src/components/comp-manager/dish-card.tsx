@@ -3,7 +3,6 @@ import { Button } from "../components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu-nav"
 import type { DishCardProps } from "./types"
-import { log } from "console"
 import { cn } from "@/lib/utils"
 export function DishCard({
   dish,

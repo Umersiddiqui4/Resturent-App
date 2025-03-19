@@ -44,10 +44,9 @@ useEffect(() => {
 }, [activeUser]);
 
 
-console.log("profName", profileName);
-console.log(activeUser,"activetop");
 
 function logOut() {
+  localStorage.removeItem("activeRestaurant"); // User data remove کریں
   localStorage.removeItem("activeUser"); // User data remove کریں
   setActiveUser(null); // Context سے بھی user ہٹا دیں
   navigate("/signin")

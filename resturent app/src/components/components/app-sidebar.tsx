@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react";
 import { Home, UtensilsCrossed, Coffee, Pizza, Salad, Fish, Beef, Cake, ChevronDown ,ListFilter} from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -29,12 +29,16 @@ const categories = [
   { name: "Drinks", icon: Coffee },
   { name: "Other", icon: ListFilter },
 ]
-
 export function AppSidebar() {
   const {activeCategory, setActiveCategory} = useAppContext()
   const { activeUser, setActiveUser } = useAppContext();
-  
-  
+  const [activeRestaurant, setActiveRestaurant] = useState("");
+  useEffect(() => {
+    const storedRestaurant = localStorage.getItem("activeRestaurant");
+    if (storedRestaurant) {
+      setActiveRestaurant(JSON.parse(storedRestaurant));
+    }
+  }, [activeUser]);
 
   return (
     <Sidebar>
@@ -42,9 +46,11 @@ export function AppSidebar() {
         <div className="flex h-14 items-center px-4">
           <UtensilsCrossed className="mr-2 h-6 w-6" />
           <span className="font-bold">
-          {activeUser && activeUser.restaurantName
-    ? activeUser.restaurantName.charAt(0).toUpperCase() + activeUser.restaurantName.slice(1) + " Restaurant"
-    : "No Restaurant Available"}
+          {(activeUser?.restaurantName || activeRestaurant)
+  ? ((activeUser?.restaurantName || activeRestaurant).charAt(0).toUpperCase() + 
+     (activeUser?.restaurantName || activeRestaurant).slice(1) + " Restaurant")
+  : "No Restaurant Available"}
+
 </span>
 
 

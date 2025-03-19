@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "./components/ui/button"
 import { Card, CardContent } from "./components/ui/card"
 import { Input } from "./components/ui/input"
@@ -51,7 +51,11 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           localStorage.setItem("activeUser", JSON.stringify(foundUser))
           setActiveUser(foundUser)
           setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" })
-          navigate("/")
+            if(activeUser?.role === "owner"){
+              navigate("/")
+            }else if(activeUser?.role === "user"){
+              navigate("/restaurent-selection")
+            }
         } else {
           setSnackbar({ open: true, message: "Incorrect password. Try again!", severity: "error" })
         }
@@ -63,6 +67,14 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
       console.error("Error parsing user data:", error)
     }
   }
+  useEffect(() => {
+    if(activeUser?.role === "owner"){
+      navigate("/")
+    }else if(activeUser?.role === "user"){
+      navigate("/restaurent-selection")
+    }
+  }, [activeUser])
+  
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
