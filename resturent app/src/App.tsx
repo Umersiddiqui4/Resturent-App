@@ -1,4 +1,3 @@
-import { BrowserRouter } from "react-router-dom"
 import { ThemeProvider } from "./components/comp-manager/theme-provider"
 import AppRouter from "./routes/Router"
 

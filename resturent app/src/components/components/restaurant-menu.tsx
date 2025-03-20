@@ -92,11 +92,9 @@ export function RestaurantMenu() {
   const [cart, setCart] = useState<Record<number, number>>({})
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
   const [userRole, setUserRole] = useState<"owner" | "user" | "guest">("user")
-  const [isDragging, setIsDragging] = useState(false)
   const [activeRestaurant, setActiveRestaurant] = useState("")
   const navigate = useNavigate();
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
@@ -292,7 +290,6 @@ export function RestaurantMenu() {
   const clearFilters = () => {
     setSearchQuery("")
     setSelectedCategory(null)
-    setPriceRange([0, 50])
     setSortOrder("custom")
     setShowVegetarian(false)
   }
@@ -310,7 +307,6 @@ export function RestaurantMenu() {
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
-    setIsDragging(false)
 
     // Dropped outside the list
     if (!result.destination) {
@@ -352,9 +348,7 @@ export function RestaurantMenu() {
 
   }
 
-  const handleDragStart = () => {
-    setIsDragging(true)
-  }
+ 
 
   const openDishDetail = (dish: Dish) => {
     setSelectedDish(dish)
@@ -699,7 +693,7 @@ export function RestaurantMenu() {
               </div>
             ) : viewMode === "grid" ? (
               userRole === "owner" && sortOrder === "custom" ? (
-                <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+                <DragDropContext onDragEnd={handleDragEnd} >
                   <Droppable droppableId="dishes" direction="horizontal">
                     {(provided) => (
                       <div
@@ -764,7 +758,7 @@ export function RestaurantMenu() {
                 </div>
               )
             ) : userRole === "owner" && sortOrder === "custom" ? (
-              <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+              <DragDropContext onDragEnd={handleDragEnd} >
                 <Droppable droppableId="dishes">
                   {(provided) => (
                     <div className="space-y-4" {...provided.droppableProps} ref={provided.innerRef}>

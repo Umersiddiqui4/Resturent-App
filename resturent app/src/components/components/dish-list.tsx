@@ -6,7 +6,7 @@ import { Edit, Trash } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import type { DishListProps } from "../comp-manager/types"
 
-export function DishList({ dish, onEdit, onDelete, onAddToCart, isInCart = 0, userRole, onClick }: DishListProps) {
+export function DishList({ dish, onEdit, onDelete, onAddToCart, isInCart = 0, onClick }: DishListProps) {
   return (
     <div className="flex items-center gap-4 rounded-lg border p-4 cursor-pointer" onClick={() => onClick && onClick()}>
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md">

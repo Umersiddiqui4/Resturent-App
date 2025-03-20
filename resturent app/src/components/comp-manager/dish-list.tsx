@@ -10,7 +10,6 @@ export function DishList({
   dish,
   onEdit,
   onDelete,
-  
   onAddToCart,
   isInCart = 0,
   onClick,
