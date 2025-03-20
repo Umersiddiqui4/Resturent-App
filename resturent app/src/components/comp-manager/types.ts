@@ -11,7 +11,6 @@ export interface Dish {
   
 }
 
-// Update the DishCardProps interface to remove wishlist props
 export interface DishCardProps {
   dish: Dish
   onEdit?: () => void

@@ -8,9 +8,12 @@ import { Input } from "./components/ui/input"
 import { Label } from "./components/ui/label"
 import { ThemeToggle } from "./components/ui/Theme-toggle"
 import { Eye, EyeOff } from "lucide-react"
-import MuiSnackbar from "./components/ui/MuiSnackbar" 
+import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useNavigate } from "react-router-dom"
 import { useAppContext } from "../context/AppContext"
+import { auth } from "../firebase/firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
@@ -21,71 +24,57 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   const navigate = useNavigate();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false) 
+  const [showPassword, setShowPassword] = useState(false)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" })
 
 
   useEffect(() => {
-      const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
-      setActiveUser(storedOwners);
-    }, []);
+    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+    setActiveUser(storedOwners);
+  }, []);
 
 
   const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev) 
+    setShowPassword((prev) => !prev)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const storedUsers = localStorage.getItem("users")
-    const storedOwners = localStorage.getItem("owners")
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     try {
-      const users = storedUsers ? JSON.parse(storedUsers) : []
-      const owners = storedOwners ? JSON.parse(storedOwners) : []
-      
-      if (!Array.isArray(users) || !Array.isArray(owners)) {
-        setSnackbar({ open: true, message: "Invalid user data found!", severity: "error" })
-        return
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      const allAccounts = [...users, ...owners]
-      const foundUser = allAccounts.find((user) => user.email === email)
+      const userData = { email: user.email, uid: user.uid, role: "user" }; // Role کو Firestore سے بھی فیچ کیا جا سکتا ہے
+      localStorage.setItem("activeUser", JSON.stringify(userData));
+      setActiveUser(userData);
 
-      if (foundUser) {
-        if (foundUser.password === password) {
-          localStorage.setItem("activeUser", JSON.stringify(foundUser))
-          setActiveUser(foundUser)
-          setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" })
-            if(activeUser?.role === "owner"){
-              navigate("/dashboard")
-            }else if(activeUser?.role === "user"){
-              navigate("/restaurent-selection")
-            }
+      setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" });
+      setTimeout(() => {
+        if (userData.role === "owner") {
+          navigate("/dashboard");
         } else {
-          setSnackbar({ open: true, message: "Incorrect password. Try again!", severity: "error" })
+          navigate("/restaurent-selection");
         }
-      } else {
-        setSnackbar({ open: true, message: "No account found with this email.", severity: "warning" })
-      }
+      }, 500);
     } catch (error) {
-      setSnackbar({ open: true, message: "Error reading stored user data!", severity: "error" })
-      console.error("Error parsing user data:", error)
+      setSnackbar({ open: true, message: "Login failed: " + error.message, severity: "error" });
     }
-  }
+  };
+
   useEffect(() => {
-    if(activeUser){
-    if(activeUser?.role === "owner"){
-      navigate("/dashboard")
-    }else if(activeUser?.role === "user"){
-      navigate("/restaurent-selection")
-    }} else {
+    if (activeUser) {
+      if (activeUser?.role === "owner") {
+        navigate("/dashboard")
+      } else if (activeUser?.role === "user") {
+        navigate("/restaurent-selection")
+      }
+    } else {
       navigate("/")
 
     }
   }, [activeUser])
-  
+
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
@@ -96,10 +85,10 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           </div>
           <Card className="overflow-hidden">
             <CardContent className="grid p-0 md:grid-cols-2">
-           
-              <MuiSnackbar 
-                open={snackbar.open} 
-                message={snackbar.message} 
+
+              <MuiSnackbar
+                open={snackbar.open}
+                message={snackbar.message}
                 severity={snackbar.severity as "success" | "error" | "warning" | "info"}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
               />
@@ -151,7 +140,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
                   </Button>
                   <div className="text-center text-sm">
                     Don&apos;t have an account?{" "}
-                    <a onClick={() => {navigate('/signup')}} className="underline underline-offset-4 cursor-pointer">Sign Up</a>
+                    <a onClick={() => { navigate('/signup') }} className="underline underline-offset-4 cursor-pointer">Sign Up</a>
                   </div>
                 </div>
               </form>

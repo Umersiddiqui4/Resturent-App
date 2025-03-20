@@ -1,5 +1,5 @@
 "use client"
-
+import { auth } from "../firebase/firebaseConfig";
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "./components/ui/button"
@@ -11,16 +11,22 @@ import { Eye, EyeOff } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useAppContext } from "../context/AppContext"
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
+}
+interface snak {
+  open: boolean
+  message: string
+  severity: string
 }
 
 export function RegisterForm({ className, ...props }: React.ComponentProps<"div">) {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [accountType, setAccountType] = useState<"user" | "owner">("user")
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" })
+  const [snackbar, setSnackbar] = useState<snak>({ open: false, message: "", severity: "info" })
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -34,33 +40,40 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    const usersKey = accountType === "owner" ? "owners" : "users"
-    const existingUsers = JSON.parse(localStorage.getItem(usersKey) || "[]")
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
 
-    const userExists = existingUsers.some((user: any) => user.email === formData.email)
-    if (userExists) {
-      setSnackbar({ open: true, message: "Account already exists! Redirecting to sign-in.", severity: "warning" })
-      setTimeout(() => navigate("/"), 1500) // تھوڑا انتظار پھر ری ڈائریکٹ
-      return
-    }
+      const usersKey = accountType === "owner" ? "owners" : "users";
+      const existingUsers = JSON.parse(localStorage.getItem(usersKey) || "[]");
 
-    const userData = accountType === "owner" ? { ...formData } : { name: formData.name, email: formData.email, password: formData.password, role: "user" }
-    const updatedUsers = [...existingUsers, userData]
-    localStorage.setItem(usersKey, JSON.stringify(updatedUsers))
-    localStorage.setItem("activeUser", JSON.stringify(userData))
-    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
-      setActiveUser(storedOwners)
-    setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" })
-    setTimeout(() => { 
-      if(activeUser?.role === "owner"){
-        navigate("/dashboard")
-      }else if(activeUser?.role === "user"){
-        navigate("/restaurent-selection")
+      const userExists = existingUsers.some((u: any) => u.email === formData.email);
+      if (userExists) {
+        setSnackbar({ open: true, message: "Account already exists! Redirecting to sign-in.", severity: "warning" });
+        setTimeout(() => navigate("/"), 1500);
+        return;
       }
-    } , 500)
+
+      const userData = accountType === "owner" ? { ...formData, uid: user.uid } : { name: formData.name, email: formData.email, password: formData.password, role: "user", uid: user.uid };
+      const updatedUsers = [...existingUsers, userData];
+      localStorage.setItem(usersKey, JSON.stringify(updatedUsers));
+      localStorage.setItem("activeUser", JSON.stringify(userData));
+
+      setActiveUser(userData);
+      setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
+      setTimeout(() => {
+        if (userData.role === "owner") {
+          navigate("/dashboard");
+        } else if (userData.role === "user") {
+          navigate("/restaurent-selection");
+        }
+      }, 500);
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: "error" });
+    }
   }
 
   return (
@@ -72,11 +85,11 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
           </div>
           <Card className="overflow-hidden">
             <CardContent className="grid p-0 md:grid-cols-2">
-              
+
               {/* MUI Snackbar Component */}
-              <MuiSnackbar 
-                open={snackbar.open} 
-                message={snackbar.message} 
+              <MuiSnackbar
+                open={snackbar.open}
+                message={snackbar.message}
                 severity={snackbar.severity as "success" | "error" | "warning" | "info"}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
               />
@@ -143,12 +156,12 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
                           </div>
                         </div>
                         <Button type="submit" className="w-full mt-2">Create Owner Account</Button>
-                        
+
                       </form>
                     </TabsContent>
                   </Tabs>
                   <div className="text-center text-sm">
-                    Already have an account? <a onClick={() => {navigate('/')}} className="underline underline-offset-4 cursor-pointer ">Sign In</a>
+                    Already have an account? <a onClick={() => { navigate('/') }} className="underline underline-offset-4 cursor-pointer ">Sign In</a>
                   </div>
                 </div>
               </div>

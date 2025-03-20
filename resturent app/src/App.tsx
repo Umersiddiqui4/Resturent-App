@@ -3,8 +3,8 @@ import AppRouter from "./routes/Router"
 
 export function App() {
   return (
-      <ThemeProvider defaultTheme="system" storageKey="restaurant-theme">
+    <ThemeProvider defaultTheme="system" storageKey="restaurant-theme">
       <AppRouter />
-      </ThemeProvider>
+    </ThemeProvider>
   )
 }

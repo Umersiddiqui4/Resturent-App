@@ -7,7 +7,6 @@ import RestaurentSelection from "@/components/RestaurentSelection";
 
 export default function AppRouter() {
 
-
   return (
     <Router>
       <Routes>
