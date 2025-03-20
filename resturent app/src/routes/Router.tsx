@@ -3,8 +3,6 @@ import { RegisterForm } from "../components/Register-form";
 import { RestaurantMenu } from "@/components/components/restaurant-menu";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import RestaurentSelection from "@/components/RestaurentSelection";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
   import Customer from "@/components/Customer";
 
 export default function AppRouter() {

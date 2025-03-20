@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAppContext } from "@/context/appContext";
+import { useAppContext } from "../context/AppContext";
 
 const ProtectedRoute = () => {
   const { activeUser } = useAppContext();

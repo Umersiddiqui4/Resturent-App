@@ -10,7 +10,6 @@ export function DishCard({
   onDelete,
   onAddToCart = () => {},
   isInCart = 0,
-  userRole,
   onClick,
 }: DishCardProps) {
   return (

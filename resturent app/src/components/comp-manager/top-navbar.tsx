@@ -12,7 +12,7 @@ import {
 } from "../components/ui/dropdown-menu-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { useTheme } from "./theme-provider"
-import { useAppContext } from "@/context/appContext"
+import { useAppContext } from "../../context/AppContext"
 import { useNavigate } from "react-router-dom"
 
 

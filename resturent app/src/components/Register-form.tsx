@@ -10,7 +10,7 @@ import { ThemeToggle } from "./components/ui/Theme-toggle"
 import { Eye, EyeOff } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
-import { useAppContext } from "@/context/appContext"
+import { useAppContext } from "../context/AppContext"
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")

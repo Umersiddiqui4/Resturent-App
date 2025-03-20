@@ -5,7 +5,10 @@ export interface Dish {
   price: number
   category: string
   image: string
-  displayOrder: number
+  displayOrder: number;
+  restaurent: string | undefined
+
+  
 }
 
 // Update the DishCardProps interface to remove wishlist props

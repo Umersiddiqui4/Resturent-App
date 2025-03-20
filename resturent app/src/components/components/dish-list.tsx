@@ -5,7 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Edit, Trash } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import type { DishListProps } from "../comp-manager/types"
-import type { Dish } from "../comp-manager/types"
 
 export function DishList({ dish, onEdit, onDelete, onAddToCart, isInCart = 0, userRole, onClick }: DishListProps) {
   return (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { Home, UtensilsCrossed, Coffee, Pizza, Salad, Fish, Beef, Cake, ChevronDown ,ListFilter} from "lucide-react"
+import { Home, UtensilsCrossed, Coffee, Pizza, Salad, Fish, Beef, Cake ,ListFilter} from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Sidebar,
@@ -15,8 +15,7 @@ import {
   SidebarRail,
 } from "./ui/sidebar"
 import { Button } from "./ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu-nav"
-import { useAppContext } from "@/context/appContext"
+import { useAppContext } from "../../context/AppContext"
 
 const categories = [
   { name: "All Items", icon: Home },
@@ -31,7 +30,7 @@ const categories = [
 ]
 export function AppSidebar() {
   const {activeCategory, setActiveCategory} = useAppContext()
-  const { activeUser, setActiveUser } = useAppContext();
+  const { activeUser } = useAppContext();
   const [activeRestaurant, setActiveRestaurant] = useState("");
   useEffect(() => {
     const storedRestaurant = localStorage.getItem("activeRestaurant");

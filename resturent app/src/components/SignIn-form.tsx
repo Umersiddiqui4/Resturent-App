@@ -8,9 +8,9 @@ import { Input } from "./components/ui/input"
 import { Label } from "./components/ui/label"
 import { ThemeToggle } from "./components/ui/Theme-toggle"
 import { Eye, EyeOff } from "lucide-react"
-import MuiSnackbar from "./components/ui/MuiSnackbar" // 🔄 Path check karo
+import MuiSnackbar from "./components/ui/MuiSnackbar" 
 import { useNavigate } from "react-router-dom"
-import { useAppContext } from "@/context/appContext"
+import { useAppContext } from "../context/AppContext"
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
@@ -21,11 +21,11 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   const navigate = useNavigate();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false) // ✅ Added state
+  const [showPassword, setShowPassword] = useState(false) 
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" })
 
   const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev) // ✅ Fixed function
+    setShowPassword((prev) => !prev) 
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -85,7 +85,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           </div>
           <Card className="overflow-hidden">
             <CardContent className="grid p-0 md:grid-cols-2">
-              {/* ✅ Snackbar Notification */}
+           
               <MuiSnackbar 
                 open={snackbar.open} 
                 message={snackbar.message} 

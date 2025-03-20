@@ -7,17 +7,17 @@ import { Separator } from "./components/ui/separator"
 import { Star } from "lucide-react"
 
 interface Review {
-  id: string
-  userName: string
-  userInitials: string
-  userImage?: string
-  rating: number
-  date: string
-  comment: string
+  id: string;
+  userName: string;
+  userInitials: string;
+  userImage?: string;
+  rating: number;
+  date: string;
+  comment: string;
 }
 
 interface CustomerReviewsProps {
-  reviews: Review[]
+  reviews?: Review[]
   title?: string
 }
 interface Dish {
@@ -38,18 +38,14 @@ export default function Customer({
   reviews = defaultReviews,
   title = "Customer Reviews",
 }: CustomerReviewsProps) {
-  // Initialize dark mode from localStorage on component mount
   useEffect(() => {
-    // Check if we have a saved theme preference
     const savedTheme = localStorage.getItem("theme-preference")
 
-    // If we have a saved preference, apply it
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark")
     } else if (savedTheme === "light") {
       document.documentElement.classList.remove("dark")
     } else {
-      // If no preference, check system preference
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         document.documentElement.classList.add("dark")
       }

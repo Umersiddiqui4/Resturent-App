@@ -1,9 +1,15 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
+interface User {
+  role : string;
+  name: string;
+  restaurantName: string;
+  
+}
 // 1️⃣ Context Type Define
 interface AppContextType {
-  activeUser: string | null;
-  setActiveUser: (user: string | null) => void;
+  activeUser: User | null ;
+  setActiveUser: (user: any | null) => void;
   activeCategory: string | null;
   setActiveCategory: (category: string | null) => void;
 }
@@ -13,7 +19,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // 3️⃣ Context Provider Component
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [activeUser, setActiveUser] = useState<string | null>(null);
+  const [activeUser, setActiveUser] = useState<User | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   return (

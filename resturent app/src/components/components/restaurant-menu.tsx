@@ -37,8 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Checkbox } from "./ui/checkbox"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
-import { useAppContext } from "@/context/appContext"
-import imageSVG from "../../assets/image.svg"
+import { useAppContext } from "../../context/AppContext"
 import { useNavigate } from "react-router-dom"
 
 // Sample dish data
@@ -51,6 +50,7 @@ const initialDishes: Dish[] = [
     category: "Pizza",
     image: "https://img.taste.com.au/Anr9L8A_/taste/2018/08/hawaiian-pizza-pasta-bake_1908x1320-140399-1.jpg",
     displayOrder: 1,
+    restaurent: ""
   },
   {
     id: 2,
@@ -60,6 +60,7 @@ const initialDishes: Dish[] = [
     category: "Pasta",
     image: "https://s.lightorangebean.com/media/20240914160809/Spicy-Penne-Pasta_-done.png",
     displayOrder: 2,
+    restaurent: ""
   },
   {
     id: 3,
@@ -69,6 +70,7 @@ const initialDishes: Dish[] = [
     category: "Salad",
     image: "https://images.immediate.co.uk/production/volatile/sites/30/2014/05/Epic-summer-salad-hub-2646e6e.jpg?resize=768,574",
     displayOrder: 3,
+    restaurent: ""
   },
 
 
@@ -97,7 +99,6 @@ export function RestaurantMenu() {
   const [isDragging, setIsDragging] = useState(false)
   const [activeRestaurant, setActiveRestaurant] = useState("")
   const navigate = useNavigate();
-  // Add these new state variables after the other useState declarations
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [rating, setRating] = useState<number | null>(null)
@@ -116,9 +117,8 @@ export function RestaurantMenu() {
   useEffect(() => {
     const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
     setActiveUser(storedOwners);
-    setUserRole(getUserRole(storedOwners)); // `storedOwners` استعمال کریں، `activeUser` نہیں
-  }, []); // `activeUser` کو dependencies میں شامل نہ کریں
-
+    setUserRole(getUserRole(storedOwners)); 
+  }, []);
   useEffect(() => {
     const storedDishes = JSON.parse(localStorage.getItem("dishes") || "[]");
     const storedrestaurant = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
@@ -240,15 +240,12 @@ export function RestaurantMenu() {
 
   // Modify the handleDeleteDish function to remove the image from localStorage
   const handleDeleteDish = (id: number) => {
-    // لوکل اسٹوریج سے امیج کو ہٹا دیں
     localStorage.removeItem(`dish-image-${id}`);
 
     const updatedDishes = dishes.filter((dish) => dish.id !== id);
 
-    // اسٹیٹ کو اپڈیٹ کریں
     setDishes(updatedDishes);
 
-    // لوکل اسٹوریج کو بھی اپڈیٹ کریں
     localStorage.setItem("dishes", JSON.stringify(updatedDishes));
   };
 
@@ -323,27 +320,21 @@ export function RestaurantMenu() {
     const sourceIndex = result.source.index
     const destinationIndex = result.destination.index
 
-    // If the item was dropped in the same position, do nothing
     if (sourceIndex === destinationIndex) {
       return
     }
 
-    // Create a copy of the filtered dishes
     const reorderedDishes = [...filteredDishes]
 
-    // Remove the dragged item
     const [removed] = reorderedDishes.splice(sourceIndex, 1)
 
-    // Insert it at the destination
     reorderedDishes.splice(destinationIndex, 0, removed)
 
-    // Update display order for all dishes
     const updatedDishes = reorderedDishes.map((dish, index) => ({
       ...dish,
       displayOrder: index + 1,
     }))
 
-    // Create a map of updated dishes by ID for quick lookup
     const updatedDishMap = updatedDishes.reduce(
       (map, dish) => {
         map[dish.id] = dish
@@ -352,7 +343,6 @@ export function RestaurantMenu() {
       {} as Record<number, Dish>,
     )
 
-    // Update all dishes with new display orders
     const allDishesUpdated = dishes.map((dish) => (updatedDishMap[dish.id] ? updatedDishMap[dish.id] : dish))
 
     setDishes(allDishesUpdated)
@@ -362,12 +352,10 @@ export function RestaurantMenu() {
 
   }
 
-  // Handle drag start event
   const handleDragStart = () => {
     setIsDragging(true)
   }
 
-  // Add this function to handle opening the detail modal
   const openDishDetail = (dish: Dish) => {
     setSelectedDish(dish)
     setRating(dishRatings[dish.id]?.rating || null)
@@ -375,29 +363,22 @@ export function RestaurantMenu() {
     setIsDetailModalOpen(true)
   }
 
-  // Add this function to handle saving ratings and comments
   const saveRatingAndComment = () => {
     if (selectedDish && rating) {
-      // Get existing feedback from localStorage
       const existingFeedback = JSON.parse(localStorage.getItem("feedback") || "{}");
-
-      // Create new feedback object
       const newFeedback = {
         ...existingFeedback,
         [selectedDish.id]: { rating, comment, selectedDish },
       };
 
-      // Save updated feedback to localStorage
       localStorage.setItem("feedback", JSON.stringify(newFeedback));
 
-      // Update state
       setDishRatings(newFeedback);
       setIsDetailModalOpen(false);
     }
   };
 
 
-  // Add a function to load images from localStorage
   const loadImagesFromLocalStorage = () => {
     setDishes((prevDishes) =>
       prevDishes.map((dish) => {
@@ -410,17 +391,15 @@ export function RestaurantMenu() {
     )
   }
 
-  // Add useEffect to load images when component mounts
   useEffect(() => {
     loadImagesFromLocalStorage()
   }, [])
 
-  // Add these functions at the end of the component, before the final closing brace
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const imageUrl = await saveImageToIndexedDB(file); // IndexedDB mein save kar ke URL lo
+        const imageUrl = await saveImageToIndexedDB(file); 
         setNewDish({ ...newDish, image: imageUrl });
       } catch (error) {
         console.error("Error saving image:", error);
@@ -445,7 +424,7 @@ export function RestaurantMenu() {
         const reader = new FileReader();
 
         reader.onload = () => {
-          const transaction = db.transaction("images", "readwrite"); // Transaction ko yahan banaya
+          const transaction = db.transaction("images", "readwrite"); 
           const store = transaction.objectStore("images");
 
           const data = { image: reader.result };
@@ -465,10 +444,6 @@ export function RestaurantMenu() {
       request.onerror = () => reject(request.error);
     });
   };
-
-
-
-
 
   return (
     <SidebarProvider>
