@@ -16,7 +16,7 @@ export function DishCard({
   onClick,
 }: DishCardProps) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden ">
       <CardHeader className="p-0">
         <div className="relative h-48 w-full">
           <img

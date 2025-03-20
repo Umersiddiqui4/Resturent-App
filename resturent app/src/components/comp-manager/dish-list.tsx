@@ -1,7 +1,7 @@
 "use client"
 import { Edit, Trash } from "lucide-react"
 import { Button } from "../components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu-nav"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import type { DishListProps } from "./types"
 import { cn } from "@/lib/utils"
 

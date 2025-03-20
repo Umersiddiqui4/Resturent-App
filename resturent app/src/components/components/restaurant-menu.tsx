@@ -740,7 +740,7 @@ export function RestaurantMenu() {
                   </Droppable>
                 </DragDropContext>
               ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
                   {filteredDishes.map((dish) => {
                     return (
                       <DishCard
@@ -1082,7 +1082,7 @@ export function RestaurantMenu() {
                 <Button onClick={saveRatingAndComment} disabled={!rating}>
                   Save Rating
                 </Button>
-                <Button onClick={() => {navigate("/customer")}} disabled={!rating}>
+                <Button onClick={() => {navigate("/customer")}} >
                 Feedback
                 </Button>
               </DialogFooter>

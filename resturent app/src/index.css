@@ -77,13 +77,13 @@
 
 /* Add this at the end of your index.css file */
 [data-radix-popper-content-wrapper] {
-  position: absolute !important;
-  top: 50px !important;
-  right: 0 !important;
-  left: unset !important;
-  transform: none !important;
-  min-width: max-content !important;
-  will-change: auto !important;
+  position: absolute ;
+  top: 50px ;
+  /* right: 0 !important; */
+  left: unset ;
+  transform: none ;
+  min-width: max-content ;
+  will-change: auto ;
 }
 
 .leftZero{
