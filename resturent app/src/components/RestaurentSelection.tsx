@@ -73,7 +73,7 @@ function RestaurentSelection() {
 
         {backgroundImage && (
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
             className="mt-6 px-4 py-2 bg-white/100 hover:bg-white text-black rounded-md font-bold  transition-all duration-300 transform hover:scale-105 backdrop-blur-sm"
           >
             {value ? value.charAt(0).toUpperCase() + value.slice(1) : "Select plzz.."}

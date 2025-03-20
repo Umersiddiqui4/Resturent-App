@@ -56,7 +56,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" })
     setTimeout(() => { 
       if(activeUser?.role === "owner"){
-        navigate("/")
+        navigate("/dashboard")
       }else if(activeUser?.role === "user"){
         navigate("/restaurent-selection")
       }
@@ -148,7 +148,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
                     </TabsContent>
                   </Tabs>
                   <div className="text-center text-sm">
-                    Already have an account? <a onClick={() => {navigate('/signin')}} className="underline underline-offset-4 cursor-pointer ">Sign In</a>
+                    Already have an account? <a onClick={() => {navigate('/')}} className="underline underline-offset-4 cursor-pointer ">Sign In</a>
                   </div>
                 </div>
               </div>

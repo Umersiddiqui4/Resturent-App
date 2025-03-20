@@ -52,7 +52,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           setActiveUser(foundUser)
           setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" })
             if(activeUser?.role === "owner"){
-              navigate("/")
+              navigate("/dashboard")
             }else if(activeUser?.role === "user"){
               navigate("/restaurent-selection")
             }
@@ -69,7 +69,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   }
   useEffect(() => {
     if(activeUser?.role === "owner"){
-      navigate("/")
+      navigate("/dashboard")
     }else if(activeUser?.role === "user"){
       navigate("/restaurent-selection")
     }

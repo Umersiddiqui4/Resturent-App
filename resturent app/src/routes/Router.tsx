@@ -11,8 +11,8 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<RestaurantMenu />} />
-        <Route path="/signin" element={<LoginForm />} />
+        <Route path="/" element={<LoginForm />} />
+        <Route path="/dashboard" element={<RestaurantMenu />} />
         <Route path="/signup" element={<RegisterForm />} />
         <Route path="/customer" element={<Customer />} />
         <Route path="/restaurent-selection" element={<RestaurentSelection />} />
