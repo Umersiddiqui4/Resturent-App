@@ -5,7 +5,7 @@ const ProtectedRoute = () => {
   const { activeUser } = useAppContext();
 
   if (!activeUser) {
-    return <Navigate to="/signin" />;
+    return <Navigate to="/" />;
   }
 
   if (activeUser.role === "user") {

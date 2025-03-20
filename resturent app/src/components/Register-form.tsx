@@ -43,7 +43,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     const userExists = existingUsers.some((user: any) => user.email === formData.email)
     if (userExists) {
       setSnackbar({ open: true, message: "Account already exists! Redirecting to sign-in.", severity: "warning" })
-      setTimeout(() => navigate("/signin"), 1500) // تھوڑا انتظار پھر ری ڈائریکٹ
+      setTimeout(() => navigate("/"), 1500) // تھوڑا انتظار پھر ری ڈائریکٹ
       return
     }
 

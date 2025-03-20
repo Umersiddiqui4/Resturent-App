@@ -24,6 +24,13 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   const [showPassword, setShowPassword] = useState(false) 
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" })
 
+
+  useEffect(() => {
+      const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+      setActiveUser(storedOwners);
+    }, []);
+
+
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev) 
   }
@@ -68,10 +75,14 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
     }
   }
   useEffect(() => {
+    if(activeUser){
     if(activeUser?.role === "owner"){
       navigate("/dashboard")
     }else if(activeUser?.role === "user"){
       navigate("/restaurent-selection")
+    }} else {
+      navigate("/")
+
     }
   }, [activeUser])
   
