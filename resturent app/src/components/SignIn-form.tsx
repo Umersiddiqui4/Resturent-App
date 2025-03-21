@@ -14,6 +14,7 @@ import { useAppContext } from "../context/AppContext"
 import { auth, db } from "../firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { User } from "../components/comp-manager/types"
 
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
@@ -43,15 +44,18 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+      
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (!userDoc.exists()) {
         setSnackbar({ open: true, message: "User data not found!", severity: "error" });
         return;
       }
-
-      const userData = userDoc.data();
+      
+      const userData = userDoc.data() as User; // 🔹 Explicitly cast as User
+      
       setActiveUser(userData);
+
+      localStorage.setItem("activeUser", JSON.stringify(userData));
 
       setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" });
 
