@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../firebase/firebaseConfig";
+import { useAppContext } from "@/context/AppContext";
+import { User } from "../components/comp-manager/types";
+
 
 function RestaurentSelection() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const [owners, setOwners] = useState<{ restaurantName: string }[]>([]);
+  const { owners, setOwners } = useAppContext()
   const navigate = useNavigate();
   const [value, setValue] = useState("")
 
-
-  // Fixed restaurant images
   const images = [
     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cmVzdGF1cmFudHxlbnwwfHwwfHx8MA%3D%3D",
     "https://images.squarespace-cdn.com/content/v1/61d2ccabbc553c1fec7c16e9/1710783697256-KVOWMG2EKE1PMJ4NXGBJ/DSC_4094.jpg?format=2500w",
@@ -25,17 +28,31 @@ function RestaurentSelection() {
   ];
 
   useEffect(() => {
-    const storedOwners = JSON.parse(localStorage.getItem("owners") || "[]");
-    setOwners(storedOwners);
+    const fetchOwners = async () => {
+      try {
+        const usersCollection = collection(db, "users");
+        const q = query(usersCollection, where("role", "==", "owner"));
+        const snapshot = await getDocs(q);
+        const ownersList: User[] = snapshot.docs.map(doc => ({
+          ...(doc.data() as User),
+          restaurantName: doc.data().restaurantName || ""
+        }));
+
+        setOwners(ownersList);
+
+      } catch (error) {
+        console.error("Error fetching owners:", error);
+      }
+    };
+
+    fetchOwners();
   }, []);
 
   const handleImageClick = (image: string, owner: any) => {
     setBackgroundImage(image);
-    setValue(owner.restaurantName)
+    setValue(owner.restaurantName);
     localStorage.setItem("activeRestaurant", JSON.stringify(owner.restaurantName));
-
   };
-
   return (
     <div
       className="min-h-screen transition-all duration-1000 ease-in-out  p-4 md:p-8"
@@ -66,7 +83,7 @@ function RestaurentSelection() {
                 className="absolute inset-0 w-full h-full object-cover "
               />
               <div className="absolute bottom-2 left-2 text-white text-lg  font-bold z-10 backdrop-blur-sm">
-                {owner.restaurantName.charAt(0).toUpperCase() + owner.restaurantName.slice(1)} Restaurant
+                {(owner.restaurantName ? owner.restaurantName.charAt(0).toUpperCase() + owner.restaurantName.slice(1) : "Unknown")} Restaurant
               </div>
             </div>
           ))}

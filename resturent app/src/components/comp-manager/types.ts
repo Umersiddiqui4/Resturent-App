@@ -25,3 +25,10 @@ export interface DishListProps extends Omit<DishCardProps, "dish"> {
   dish: Dish
 }
 
+export interface User {
+  role: string;
+  name: string;
+  restaurantName?: string | undefined;
+  uid: string;
+  email: string; 
+}

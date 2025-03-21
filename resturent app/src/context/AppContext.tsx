@@ -1,35 +1,29 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { User } from "../components/comp-manager/types"; 
 
-interface User {
-  role : string;
-  name: string;
-  restaurantName: string;
-  
-}
-// 1️⃣ Context Type Define
 interface AppContextType {
-  activeUser: User | null ;
-  setActiveUser: (user: any | null) => void;
+  activeUser: User | null;
+  setActiveUser: (user: User | null) => void;
   activeCategory: string | null;
   setActiveCategory: (category: string | null) => void;
+  owners: User[];
+  setOwners: (owners: User[]) => void;
 }
 
-// 2️⃣ Default Context Value
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// 3️⃣ Context Provider Component
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activeUser, setActiveUser] = useState<User | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [owners, setOwners] = useState<User[]>([]);
 
   return (
-    <AppContext.Provider value={{ activeUser, setActiveUser, activeCategory, setActiveCategory }}>
+    <AppContext.Provider value={{ activeUser, setActiveUser, activeCategory, setActiveCategory, owners, setOwners }}>
       {children}
     </AppContext.Provider>
   );
 };
 
-// 4️⃣ Custom Hook for using Context
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (!context) {
