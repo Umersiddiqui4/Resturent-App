@@ -11,7 +11,8 @@ import { Eye, EyeOff } from "lucide-react"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useNavigate } from "react-router-dom"
 import { useAppContext } from "../context/AppContext"
-import { auth } from "../firebase/firebaseConfig";
+import { auth, db } from "../firebase/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 
@@ -27,12 +28,10 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   const [showPassword, setShowPassword] = useState(false)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" })
 
-
   useEffect(() => {
     const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
     setActiveUser(storedOwners);
   }, []);
-
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev)
@@ -45,11 +44,17 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const userData = { email: user.email, uid: user.uid, role: "user" }; // Role کو Firestore سے بھی فیچ کیا جا سکتا ہے
-      localStorage.setItem("activeUser", JSON.stringify(userData));
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) {
+        setSnackbar({ open: true, message: "User data not found!", severity: "error" });
+        return;
+      }
+
+      const userData = userDoc.data();
       setActiveUser(userData);
 
       setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" });
+
       setTimeout(() => {
         if (userData.role === "owner") {
           navigate("/dashboard");
@@ -57,7 +62,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           navigate("/restaurent-selection");
         }
       }, 500);
-    } catch (error) {
+    } catch (error: any) {
       setSnackbar({ open: true, message: "Login failed: " + error.message, severity: "error" });
     }
   };

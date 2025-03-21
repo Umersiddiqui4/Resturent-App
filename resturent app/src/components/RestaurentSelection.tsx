@@ -9,10 +9,11 @@ function RestaurentSelection() {
   const navigate = useNavigate();
   const [value, setValue] = useState("")
 
+
   // Fixed restaurant images
   const images = [
-      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cmVzdGF1cmFudHxlbnwwfHwwfHx8MA%3D%3D",
-      "https://images.squarespace-cdn.com/content/v1/61d2ccabbc553c1fec7c16e9/1710783697256-KVOWMG2EKE1PMJ4NXGBJ/DSC_4094.jpg?format=2500w",
+    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cmVzdGF1cmFudHxlbnwwfHwwfHx8MA%3D%3D",
+    "https://images.squarespace-cdn.com/content/v1/61d2ccabbc553c1fec7c16e9/1710783697256-KVOWMG2EKE1PMJ4NXGBJ/DSC_4094.jpg?format=2500w",
     "https://plus.unsplash.com/premium_photo-1661883237884-263e8de8869b?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cmVzdGF1cmFudHxlbnwwfHwwfHx8MA%3D%3D",
     "https://roerestaurant.co.uk/wp-content/uploads/2024/06/e5dba8c1-7bf4-4a38-8e55-e459a7a6ef70-2.webp",
     "https://thethekedaar.in/blogs/wp-content/uploads/2021/03/Restaurant-Interior.jpg",
@@ -28,11 +29,11 @@ function RestaurentSelection() {
     setOwners(storedOwners);
   }, []);
 
-  const handleImageClick = (image: string, owner: any ) => {
+  const handleImageClick = (image: string, owner: any) => {
     setBackgroundImage(image);
     setValue(owner.restaurantName)
     localStorage.setItem("activeRestaurant", JSON.stringify(owner.restaurantName));
-    
+
   };
 
   return (
@@ -65,7 +66,7 @@ function RestaurentSelection() {
                 className="absolute inset-0 w-full h-full object-cover "
               />
               <div className="absolute bottom-2 left-2 text-white text-lg  font-bold z-10 backdrop-blur-sm">
-              {owner.restaurantName.charAt(0).toUpperCase() + owner.restaurantName.slice(1)} Restaurant
+                {owner.restaurantName.charAt(0).toUpperCase() + owner.restaurantName.slice(1)} Restaurant
               </div>
             </div>
           ))}
