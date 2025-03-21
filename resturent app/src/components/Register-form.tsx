@@ -1,5 +1,5 @@
 "use client"
-import { auth } from "../firebase/firebaseConfig";
+import { auth, db } from "../firebase/firebaseConfig";
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "./components/ui/button"
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useAppContext } from "../context/AppContext"
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
@@ -39,7 +40,6 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -47,35 +47,35 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
-      const usersKey = accountType === "owner" ? "owners" : "users";
-      const existingUsers = JSON.parse(localStorage.getItem(usersKey) || "[]");
+      const userData = {
+        uid: user.uid,
+        name: formData.name,
+        email: formData.email,
+        restaurantName: accountType === "owner" ? formData.restaurantName : "",
+        role: accountType,
+      };
 
-      const userExists = existingUsers.some((u: any) => u.email === formData.email);
-      if (userExists) {
-        setSnackbar({ open: true, message: "Account already exists! Redirecting to sign-in.", severity: "warning" });
-        setTimeout(() => navigate("/"), 1500);
-        return;
+      await setDoc(doc(db, "users", user.uid), userData);
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        setActiveUser(userDoc.data());
+        setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
+
+        setTimeout(() => {
+          if (userDoc.data().role === "owner") {
+            navigate("/dashboard");
+          } else {
+            navigate("/restaurent-selection");
+          }
+        }, 500);
+      } else {
+        setSnackbar({ open: true, message: "User data not found in Firestore!", severity: "error" });
       }
-
-      const userData = accountType === "owner" ? { ...formData, uid: user.uid } : { name: formData.name, email: formData.email, password: formData.password, role: "user", uid: user.uid };
-      const updatedUsers = [...existingUsers, userData];
-      localStorage.setItem(usersKey, JSON.stringify(updatedUsers));
-      localStorage.setItem("activeUser", JSON.stringify(userData));
-
-      setActiveUser(userData);
-      setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
-      setTimeout(() => {
-        if (userData.role === "owner") {
-          navigate("/dashboard");
-        } else if (userData.role === "user") {
-          navigate("/restaurent-selection");
-        }
-      }, 500);
-    } catch (error) {
+    } catch (error: any) {
       setSnackbar({ open: true, message: error.message, severity: "error" });
     }
-  }
-
+  };
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
       <div className="w-full max-w-sm md:max-w-3xl">
