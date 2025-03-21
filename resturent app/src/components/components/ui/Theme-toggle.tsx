@@ -2,27 +2,20 @@
 
 import { Moon, Sun } from "lucide-react"
 import { Button } from "./button"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark") ? "dark" : "light"
-    }
-    return "light"
-  })
+  const [theme, setTheme] = useState<"light" | "dark">("light")
 
-  useEffect(() => {
+  const toggleTheme = () => {
+    setTheme(prevTheme => (prevTheme === "dark" ? "light" : "dark"))
     const root = document.documentElement
     if (theme === "dark") {
       root.classList.add("dark")
     } else {
       root.classList.remove("dark")
     }
-  }, [theme])
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
+    localStorage.setItem("restaurant-theme", theme)
   }
 
   return (
@@ -33,4 +26,3 @@ export function ThemeToggle() {
     </Button>
   )
 }
-
