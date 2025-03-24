@@ -43,7 +43,7 @@ export function AppSidebar() {
   const { activeCategory, setActiveCategory } = useAppContext()
   const { activeUser } = useAppContext()
   const { owners, setOwners } = useAppContext()
-  const [activeRestaurant, setActiveRestaurant] = useState<any>("")
+  const [activeRestaurant, setActiveRestaurant] = useState("")
   const [restaurants, setRestaurants] = useState<User[]>()
 
   useEffect(() => {
@@ -76,21 +76,16 @@ export function AppSidebar() {
     setRestaurants(owners)
   }, [activeUser])
 
+  useEffect(() => {
+    if (activeRestaurant === "" && activeUser?.restaurantName) {
+      setActiveRestaurant(activeUser.restaurantName);
+    }
+  }, [activeUser]);
+
   const handleRestaurantChange = (restaurant: any) => {
-    setActiveRestaurant(restaurant)
-    localStorage.setItem("activeRestaurant", JSON.stringify(restaurant))
+    setActiveRestaurant(restaurant.restaurantName)
+    localStorage.setItem("activeRestaurant", JSON.stringify(restaurant.restaurantName))
   }
-
-  const restaurantName = String(activeUser?.restaurantName || activeRestaurant?.restaurantName  || "").trim();
-
-  const displayName = restaurantName
-    ? restaurantName.charAt(0).toUpperCase() + restaurantName.slice(1) + " Restaurant"
-    : "No Restaurant Available";
-    console.log(activeUser,"activeUser name");
-    console.log(activeRestaurant,"activeRestaurant name");
-    console.log(displayName,"display name");
-    
-
   return (
     <Sidebar>
       <SidebarHeader className="border-b">
@@ -99,35 +94,39 @@ export function AppSidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center font-bold hover:text-primary focus:outline-none">
-                <span>{displayName}</span>
+                <span>
+                  {typeof activeRestaurant === "string" && activeRestaurant.length > 0
+                    ? activeRestaurant.charAt(0).toUpperCase() + activeRestaurant.slice(1)
+                    : "No Restaurant Selected"}
+                </span>
                 <ChevronDown className="ml-1 h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem className="text-sm font-medium text-muted-foreground" disabled>
-                Select Restaurant
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {restaurants?.length ? (
-                restaurants.map((restaurant) => (
-                  <DropdownMenuItem
-                    key={restaurant.name}
-                    className={cn(
-                      "cursor-pointer",
-                      (String(activeUser?.restaurantName) || String(activeRestaurant)) === restaurant.restaurantName &&
-                      "font-medium text-primary",
-                    )}
-                    onClick={() => handleRestaurantChange(restaurant)}
-                  >
-                    {(String(restaurant?.restaurantName || "").charAt(0).toUpperCase() + String(restaurant?.restaurantName || "").slice(1))} Restaurant
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <DropdownMenuItem disabled>No restaurants available</DropdownMenuItem>
-              )}
-
-
-            </DropdownMenuContent>
+            {activeUser?.restaurantName !== activeRestaurant && (
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem className="text-sm font-medium text-muted-foreground" disabled>
+                  Select Restaurant
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {restaurants?.length ? (
+                  restaurants.map((restaurant) => (
+                    <DropdownMenuItem
+                      key={restaurant.name}
+                      className={cn(
+                        "cursor-pointer",
+                        (String(activeUser?.restaurantName) || String(activeRestaurant)) === restaurant.restaurantName &&
+                        "font-medium text-primary",
+                      )}
+                      onClick={() => handleRestaurantChange(restaurant)}
+                    >
+                      {(String(restaurant?.restaurantName || "").charAt(0).toUpperCase() + String(restaurant?.restaurantName || "").slice(1))} Restaurant
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled>No restaurants available</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            )}
           </DropdownMenu>
         </div>
       </SidebarHeader>
