@@ -6,15 +6,18 @@ import { Card, CardContent, CardFooter, CardHeader } from "./ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import type { DishCardProps } from "../comp-manager/types"
 import { cn } from "@/lib/utils"
+import { useAppContext } from "@/context/AppContext"
 
 export function DishCard({
   dish,
   onEdit,
   onDelete,
-  onAddToCart = () => {},
+  onAddToCart = () => { },
   isInCart = 0,
   onClick,
 }: DishCardProps) {
+  const { activeUser } = useAppContext();
+  const { activeRestaurant } = useAppContext()
   return (
     <Card className="overflow-hidden ">
       <CardHeader className="p-0">
@@ -60,7 +63,7 @@ export function DishCard({
               </DropdownMenu>
             </div>
           )}
-          {onAddToCart && (
+          {onAddToCart && activeUser?.restaurantName !== activeRestaurant && (
             <div className="absolute right-2 bottom-2">
               <Button
                 variant="default"
@@ -75,6 +78,7 @@ export function DishCard({
               </Button>
             </div>
           )}
+
         </div>
       </CardHeader>
       <CardContent
@@ -85,7 +89,9 @@ export function DishCard({
         }}
       >
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-semibold">{dish.name}</h3>
+          <h3 className="font-semibold">
+            {dish.name.charAt(0).toUpperCase() + dish.name.slice(1)}
+          </h3>
           <span className="font-medium text-primary">${dish.price.toFixed(2)}</span>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">{dish.description}</p>

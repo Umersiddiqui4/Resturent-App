@@ -42,23 +42,24 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
     e.preventDefault();
 
     try {
+      // 🔹 Step 1: Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
-      const userDoc = await getDoc(doc(db, "users", user.uid));
+
+      // 🔹 Step 2: Firestore se user ka data fetch karein
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
       if (!userDoc.exists()) {
         setSnackbar({ open: true, message: "User data not found!", severity: "error" });
         return;
       }
-      
-      const userData = userDoc.data() as User; // 🔹 Explicitly cast as User
-      
+      const userData = userDoc.data() as User; // ✅ Type assertion for TypeScript
       setActiveUser(userData);
-
+      // 🔹 Step 4: Save to LocalStorage for session persistence
       localStorage.setItem("activeUser", JSON.stringify(userData));
-
+      // 🔹 Step 5: Show success message & navigate
       setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" });
-
       setTimeout(() => {
         if (userData.role === "owner") {
           navigate("/dashboard");
@@ -66,6 +67,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           navigate("/restaurent-selection");
         }
       }, 500);
+
     } catch (error: any) {
       setSnackbar({ open: true, message: "Login failed: " + error.message, severity: "error" });
     }
@@ -74,6 +76,8 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   useEffect(() => {
     if (activeUser) {
       if (activeUser?.role === "owner") {
+        localStorage.setItem("activeRestaurant", JSON.stringify(activeUser.restaurantName));
+
         navigate("/dashboard")
       } else if (activeUser?.role === "user") {
         navigate("/restaurent-selection")

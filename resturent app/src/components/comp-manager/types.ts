@@ -1,5 +1,5 @@
 export interface Dish {
-  id: number
+  id: any
   name: string
   description: string
   price: number
@@ -7,9 +7,10 @@ export interface Dish {
   image: string
   displayOrder: number;
   restaurent: string | undefined
-
+  createdAt: string;
   
 }
+
 
 export interface DishCardProps {
   dish: Dish

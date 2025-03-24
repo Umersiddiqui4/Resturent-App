@@ -6,6 +6,8 @@ interface AppContextType {
   setActiveUser: (user: User | null) => void;
   activeCategory: string | null;
   setActiveCategory: (category: string | null) => void;
+  activeRestaurant: string | null;
+  setActiveRestaurant: (restaurant: string | null) => void;
   owners: User[];
   setOwners: (owners: User[]) => void;
 }
@@ -15,10 +17,16 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activeUser, setActiveUser] = useState<User | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeRestaurant, setActiveRestaurant] = useState<string | null>(null);
   const [owners, setOwners] = useState<User[]>([]);
 
   return (
-    <AppContext.Provider value={{ activeUser, setActiveUser, activeCategory, setActiveCategory, owners, setOwners }}>
+    <AppContext.Provider value={{ 
+      activeUser, setActiveUser, 
+      activeCategory, setActiveCategory, 
+      activeRestaurant, setActiveRestaurant, 
+      owners, setOwners 
+    }}>
       {children}
     </AppContext.Provider>
   );

@@ -43,7 +43,7 @@ export function AppSidebar() {
   const { activeCategory, setActiveCategory } = useAppContext()
   const { activeUser } = useAppContext()
   const { owners, setOwners } = useAppContext()
-  const [activeRestaurant, setActiveRestaurant] = useState("")
+  const {activeRestaurant, setActiveRestaurant} = useAppContext()
   const [restaurants, setRestaurants] = useState<User[]>()
 
   useEffect(() => {

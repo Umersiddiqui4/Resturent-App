@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useAppContext } from "../context/AppContext"
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { User } from "../components/comp-manager/types";
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
@@ -34,7 +34,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     email: "",
     password: "",
     restaurantName: "",
-    role: "owner"
+    role: accountType
   })
   const { setActiveUser } = useAppContext();
 
@@ -43,18 +43,34 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
   }
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     try {
+      // 🛑 Step 1: Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-
+  
+      // ✅ Step 2: Firestore mein user data store karein
+      const userData = {
+        uid: user.uid,
+        name: formData.name,
+        email: formData.email,
+        role: accountType, // Default role (change if needed)
+        createdAt: new Date(), // Timestamp for tracking
+        restaurantName: formData.restaurantName,
+      };
+      localStorage.setItem("activeRestaurant", JSON.stringify(userData.restaurantName));
+      localStorage.setItem("activeUser", JSON.stringify(userData));
+      
+  
+      await setDoc(doc(db, "users", user.uid), userData);
+  
+      // ✅ Step 3: Firestore se user data fetch karein
+      const userDoc : any = await getDoc(doc(db, "users", user.uid));
+  
       if (userDoc.exists()) {
-        const userData = userDoc.data() as User;
-
-        setActiveUser(userData);
+        setActiveUser(userDoc.data());
         setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
-
+  
         setTimeout(() => {
           if (userData.role === "owner") {
             navigate("/dashboard");
@@ -69,7 +85,9 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
       setSnackbar({ open: true, message: error.message, severity: "error" });
     }
   };
+  
   console.log(accountType);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
       <div className="w-full max-w-sm md:max-w-3xl">

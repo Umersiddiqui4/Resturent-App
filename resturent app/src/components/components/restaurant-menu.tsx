@@ -1,6 +1,9 @@
 "use client"
 
 import { DropdownMenuTrigger } from "../components/ui/dropdown-menu"
+import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../firebase/firebaseConfig";
+
 
 import type React from "react"
 import { useState, useEffect } from "react"
@@ -39,18 +42,21 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { useAppContext } from "../../context/AppContext"
 import { useNavigate } from "react-router-dom"
+import { supabase } from "../lib/supabaseClient";
 
 // Sample dish data
 const initialDishes: Dish[] = [
   {
-    id: 1,
+    id: "1",
     name: "Margherita Pizza",
     description: "Classic pizza with tomato sauce, mozzarella, and basil",
     price: 12.99,
     category: "Pizza",
     image: "https://img.taste.com.au/Anr9L8A_/taste/2018/08/hawaiian-pizza-pasta-bake_1908x1320-140399-1.jpg",
     displayOrder: 1,
-    restaurent: ""
+    restaurent: "",
+    createdAt: "2022-07-15T10:30:00.000Z",
+
   },
   {
     id: 2,
@@ -60,7 +66,9 @@ const initialDishes: Dish[] = [
     category: "Pasta",
     image: "https://s.lightorangebean.com/media/20240914160809/Spicy-Penne-Pasta_-done.png",
     displayOrder: 2,
-    restaurent: ""
+    restaurent: "",
+    createdAt: "2022-07-15T10:30:00.000Z",
+
   },
   {
     id: 3,
@@ -70,10 +78,9 @@ const initialDishes: Dish[] = [
     category: "Salad",
     image: "https://images.immediate.co.uk/production/volatile/sites/30/2014/05/Epic-summer-salad-hub-2646e6e.jpg?resize=768,574",
     displayOrder: 3,
-    restaurent: ""
+    restaurent: "",
+    createdAt: "2022-07-15T10:30:00.000Z",
   },
-
-
 ]
 
 export function RestaurantMenu() {
@@ -85,17 +92,18 @@ export function RestaurantMenu() {
     price: 0,
     category: "",
     image: "https://kzmg31jtwsx06gw4knkz.lite.vusercontent.net/placeholder.svg",
+    createdAt: serverTimestamp() as any,
   })
   const [editingDish, setEditingDish] = useState<Dish | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [cart, setCart] = useState<Record<number, number>>({})
+  const [cart, setCart] = useState<Record<number, number>>({23: 23})
   const [searchQuery, setSearchQuery] = useState("")
+  const [test, setTest] = useState();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
   const [userRole, setUserRole] = useState<"owner" | "user" | "guest">("user")
-  const [activeRestaurant, setActiveRestaurant] = useState("")
   const navigate = useNavigate();
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
@@ -103,28 +111,24 @@ export function RestaurantMenu() {
   const [comment, setComment] = useState("")
   const [dishRatings, setDishRatings] = useState<Record<number, { rating: number; comment: string }>>({})
 
-
   const { activeUser, setActiveUser } = useAppContext();
   const { activeCategory, setActiveCategory } = useAppContext();
+  const { activeRestaurant, setActiveRestaurant } = useAppContext()
 
   const getUserRole = (activeUser: { restaurantName?: string }) => {
     return activeUser?.restaurantName ? "owner" : "user";
   };
 
-
   useEffect(() => {
     const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+    const storedrest = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
     setActiveUser(storedOwners);
-    setUserRole(getUserRole(storedOwners)); 
+    setActiveRestaurant(storedrest);
+    setUserRole(getUserRole(storedOwners));
   }, []);
-  useEffect(() => {
-    const storedDishes = JSON.parse(localStorage.getItem("dishes") || "[]");
-    const storedrestaurant = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
-    setDishes(storedDishes);
-    setActiveRestaurant(storedrestaurant);
-    handleCategorySelectForSideBaR();
-  }, [activeCategory]);
 
+  console.log(dishes, "dishes");
+  console.log(activeRestaurant, "activerest");
 
   const toggleUserRole = () => {
     setUserRole((prev) => {
@@ -133,7 +137,6 @@ export function RestaurantMenu() {
       return "owner"
     })
   }
-
 
   // Sort dishes by display order when in custom sort mode
   useEffect(() => {
@@ -145,14 +148,6 @@ export function RestaurantMenu() {
   // Filter and sort dishes
   const filteredDishes = dishes
     .filter((dish) => {
-      // Restaurant filter
-      if (
-        (activeUser?.restaurantName ?? activeRestaurant) !== dish.restaurent
-      ) {
-        return false;
-      }
-      
-
       // Search query filter
       if (
         searchQuery &&
@@ -184,69 +179,89 @@ export function RestaurantMenu() {
 
 
   // Modify the handleAddDish function to save the image to localStorage
-  const handleAddDish = () => {
-    const newId = dishes.length > 0 ? Math.max(...dishes.map((dish) => dish.id)) + 1 : 1;
-    const maxDisplayOrder = dishes.length > 0 ? Math.max(...dishes.map((dish) => dish.displayOrder)) : 0;
+  const handleAddDish = async () => {
+    if (!newDish.name.trim() || !newDish.price || !newDish.category.trim()) {
+      alert("Please fill all required fields!");
+      return;
+    }
 
-    const newDishWithId = {
-      ...newDish,
-      id: newId,
-      displayOrder: maxDisplayOrder + 1,
-      restaurent: activeUser?.restaurantName
-    };
+    try {
+      const docRef = await addDoc(collection(db, "dishes"), {
+        ...newDish,
+        restaurent: activeUser?.restaurantName ?? "",  // ✅ Ensure Required Field
+        displayOrder: dishes.length > 0 ? Math.max(...dishes.map(d => d.displayOrder)) + 1 : 1,
+        createdAt: serverTimestamp(),
+      });
 
-    // Update dishes state with the new dish
-    const updatedDishes = [...dishes, newDishWithId];
-    setDishes(updatedDishes);
+      const dishWithFirestoreId: Dish = {
+        ...newDish,
+        id: docRef.id,
+        restaurent: activeUser?.restaurantName ?? "",
+        displayOrder: dishes.length > 0 ? Math.max(...dishes.map(d => d.displayOrder)) + 1 : 1,
+      };
 
-    // ✅ Save all dishes to localStorage
-    localStorage.setItem("dishes", JSON.stringify(updatedDishes));
+      setDishes((prevDishes) => [...prevDishes, dishWithFirestoreId]);  // ✅ Correct Way
+      setNewDish({
+        name: "",
+        description: "",
+        price: 0,
+        category: "",
+        image: "https://kzmg31jtwsx06gw4knkz.lite.vusercontent.net/placeholder.svg",
+        createdAt: "dasdasda",
+      });
 
-    // Reset the newDish form
-    setNewDish({
-      name: "",
-      description: "",
-      price: 0,
-      category: "",
-      image: "https://kzmg31jtwsx06gw4knkz.lite.vusercontent.net/placeholder.svg",
-    });
-
-    setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding dish:", error);
+    }
   };
 
   // Modify the handleEditDish function to save the updated image to localStorage
-  const handleEditDish = () => {
-    if (editingDish) {
-      // اگر نئی امیج بیس64 فارمیٹ میں ہے تو اسے لوکل اسٹوریج میں محفوظ کریں
-      if (editingDish.image && editingDish.image.startsWith("data:")) {
-        localStorage.setItem(`dish-image-${editingDish.id}`, editingDish.image);
-      }
+  const handleEditDish = async () => {
+    if (!editingDish) return;
 
-      // نیا ڈش لسٹ اپڈیٹ کریں
+    try {
+      const dishRef = doc(db, "dishes", editingDish.id);
+
+      await updateDoc(dishRef, {
+        name: editingDish.name,
+        description: editingDish.description,
+        price: editingDish.price,
+        category: editingDish.category,
+        image: editingDish.image, // ✅ Ensure image updates in Firestore
+      });
+
       const updatedDishes = dishes.map((dish) =>
         dish.id === editingDish.id ? editingDish : dish
       );
 
-      setDishes(updatedDishes); // اسٹیٹ اپڈیٹ کریں
-      localStorage.setItem("dishes", JSON.stringify(updatedDishes)); // لوکل اسٹوریج اپڈیٹ کریں
+      setDishes(updatedDishes);
+      localStorage.setItem("dishes", JSON.stringify(updatedDishes));
 
-      // ڈائیلاگ بند کریں اور ایڈٹنگ ڈش کو ری سیٹ کریں
       setIsEditDialogOpen(false);
       setEditingDish(null);
+
+      console.log("Dish updated successfully in Firestore!");
+    } catch (error) {
+      console.error("Error updating dish in Firestore:", error);
     }
   };
-
   // Modify the handleDeleteDish function to remove the image from localStorage
-  const handleDeleteDish = (id: number) => {
-    localStorage.removeItem(`dish-image-${id}`);
+  const handleDeleteDish = async (id: string) => {
+    try {
+      const dishRef = doc(db, "dishes", id);
+      await deleteDoc(dishRef); // ✅ Firestore se delete karein
 
-    const updatedDishes = dishes.filter((dish) => dish.id !== id);
+      localStorage.removeItem(`dish-image-${id}`);
 
-    setDishes(updatedDishes);
+      const updatedDishes = dishes.filter((dish) => dish.id !== id);
+      setDishes(updatedDishes);
+      localStorage.setItem("dishes", JSON.stringify(updatedDishes));
 
-    localStorage.setItem("dishes", JSON.stringify(updatedDishes));
+      console.log("Dish deleted successfully from Firestore!");
+    } catch (error) {
+      console.error("Error deleting dish from Firestore:", error);
+    }
   };
-
 
   const openEditDialog = (dish: Dish) => {
     setEditingDish(dish)
@@ -273,17 +288,46 @@ export function RestaurantMenu() {
     })
   }
 
+  const fetchAllDishes = async () => {
+    try {
+      const dishesRef = collection(db, "dishes"); // 👈 Firestore "dishes" collection ka reference
+      const querySnapshot = await getDocs(dishesRef);
+
+      // 🔥 Filter only dishes that match the active restaurant
+      const filteredDishes: any = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter((dish: any) => dish.restaurent === activeRestaurant); // 👈 Filter by active restaurant
+
+      console.log("Filtered Dishes for Active Restaurant:", filteredDishes);
+      setDishes(filteredDishes); // 👈 Sirf matching dishes state mein save karein
+    } catch (error) {
+      console.error("Error fetching dishes:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllDishes();
+    setCart({});
+  }, [activeRestaurant]);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
   }
 
-  const handleCategorySelectForSideBaR = () => {
-    setSelectedCategory(activeCategory)
+  useEffect(() => {
+    handleCategorySelectForSideBaR();
+  }, [activeCategory]);
 
-  }
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category)
     setActiveCategory(category)
+
+  }
+  const handleCategorySelectForSideBaR = () => {
+    setSelectedCategory(activeCategory)
 
   }
 
@@ -306,49 +350,39 @@ export function RestaurantMenu() {
   ];
 
   // Handle drag end event
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return; // Dropped outside the list
 
-    // Dropped outside the list
-    if (!result.destination) {
-      return
-    }
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+    if (sourceIndex === destinationIndex) return;
 
-    const sourceIndex = result.source.index
-    const destinationIndex = result.destination.index
-
-    if (sourceIndex === destinationIndex) {
-      return
-    }
-
-    const reorderedDishes = [...filteredDishes]
-
-    const [removed] = reorderedDishes.splice(sourceIndex, 1)
-
-    reorderedDishes.splice(destinationIndex, 0, removed)
+    const reorderedDishes = [...filteredDishes];
+    const [removed] = reorderedDishes.splice(sourceIndex, 1);
+    reorderedDishes.splice(destinationIndex, 0, removed);
 
     const updatedDishes = reorderedDishes.map((dish, index) => ({
       ...dish,
       displayOrder: index + 1,
-    }))
+    }));
 
-    const updatedDishMap = updatedDishes.reduce(
-      (map, dish) => {
-        map[dish.id] = dish
-        return map
-      },
-      {} as Record<number, Dish>,
-    )
+    setDishes(updatedDishes);
+    setSortOrder("custom");
+    localStorage.setItem("dishes", JSON.stringify(updatedDishes));
 
-    const allDishesUpdated = dishes.map((dish) => (updatedDishMap[dish.id] ? updatedDishMap[dish.id] : dish))
+    try {
+      const batch = writeBatch(db); // ✅ Firestore batch update
+      updatedDishes.forEach((dish) => {
+        const dishRef = doc(db, "dishes", dish.id);
+        batch.update(dishRef, { displayOrder: dish.displayOrder });
+      });
 
-    setDishes(allDishesUpdated)
-    setSortOrder("custom")
-
-    localStorage.setItem("dishes", JSON.stringify(allDishesUpdated));
-
-  }
-
- 
+      await batch.commit(); // ✅ Update Firestore in one go
+      console.log("Dishes reordered successfully in Firestore!");
+    } catch (error) {
+      console.error("Error updating dish order in Firestore:", error);
+    }
+  };
 
   const openDishDetail = (dish: Dish) => {
     setSelectedDish(dish)
@@ -372,73 +406,42 @@ export function RestaurantMenu() {
     }
   };
 
+  const uploadImageToSupabase = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `images/${fileName}`;
 
-  const loadImagesFromLocalStorage = () => {
-    setDishes((prevDishes) =>
-      prevDishes.map((dish) => {
-        const savedImage = localStorage.getItem(`dish-image-${dish.id}`)
-        if (savedImage) {
-          return { ...dish, image: savedImage }
-        }
-        return dish
-      }),
-    )
-  }
+    const { data, error } = await supabase.storage
+      .from("restaurant-images")
+      .upload(filePath, file);
 
-  useEffect(() => {
-    loadImagesFromLocalStorage()
-  }, [])
+    if (error) {
+      console.error("Error uploading image:", error);
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("restaurant-images")
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
+  };
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const imageUrl = await saveImageToIndexedDB(file); 
-        setNewDish({ ...newDish, image: imageUrl });
+        const imageUrl = await uploadImageToSupabase(file);
+        if (imageUrl) {
+          setNewDish({ ...newDish, image: imageUrl });
+          console.log(imageUrl, "url");
+
+        }
       } catch (error) {
         console.error("Error saving image:", error);
       }
     }
   }
-
-
-  const saveImageToIndexedDB = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open("myDatabase", 1);
-
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains("images")) {
-          db.createObjectStore("images", { keyPath: "id", autoIncrement: true });
-        }
-      };
-
-      request.onsuccess = (event: any) => {
-        const db = event.target.result;
-        const reader = new FileReader();
-
-        reader.onload = () => {
-          const transaction = db.transaction("images", "readwrite"); 
-          const store = transaction.objectStore("images");
-
-          const data = { image: reader.result };
-          const addRequest = store.add(data);
-
-          addRequest.onsuccess = () => {
-            resolve(reader.result as string);
-          };
-
-          addRequest.onerror = () => reject(addRequest.error);
-        };
-
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      };
-
-      request.onerror = () => reject(request.error);
-    });
-  };
-
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -1082,8 +1085,8 @@ export function RestaurantMenu() {
                 <Button onClick={saveRatingAndComment} disabled={!rating}>
                   Save Rating
                 </Button>
-                <Button onClick={() => {navigate("/customer")}} >
-                Feedback
+                <Button onClick={() => { navigate("/customer") }} >
+                  Feedback
                 </Button>
               </DialogFooter>
             </>
