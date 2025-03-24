@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useAppContext } from "../context/AppContext"
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { User } from "../components/comp-manager/types";
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
@@ -35,7 +36,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     restaurantName: "",
     role: "owner"
   })
-  const { activeUser, setActiveUser } = useAppContext();
+  const { setActiveUser } = useAppContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -46,24 +47,16 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
-
-      const userData = {
-        uid: user.uid,
-        name: formData.name,
-        email: formData.email,
-        restaurantName: accountType === "owner" ? formData.restaurantName : "",
-        role: accountType,
-      };
-
-      await setDoc(doc(db, "users", user.uid), userData);
-
       const userDoc = await getDoc(doc(db, "users", user.uid));
+
       if (userDoc.exists()) {
-        setActiveUser(userDoc.data());
+        const userData = userDoc.data() as User;
+
+        setActiveUser(userData);
         setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
 
         setTimeout(() => {
-          if (userDoc.data().role === "owner") {
+          if (userData.role === "owner") {
             navigate("/dashboard");
           } else {
             navigate("/restaurent-selection");
@@ -76,6 +69,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
       setSnackbar({ open: true, message: error.message, severity: "error" });
     }
   };
+  console.log(accountType);
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
       <div className="w-full max-w-sm md:max-w-3xl">
