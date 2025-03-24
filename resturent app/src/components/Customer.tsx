@@ -5,6 +5,8 @@ import { Avatar, AvatarImage } from "./components/ui/avatar"
 import { Card, CardContent } from "./components/ui/card"
 import { Separator } from "./components/ui/separator"
 import { Star } from "lucide-react"
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase/firebaseConfig";
 
 interface Review {
   id: string;
@@ -55,11 +57,25 @@ export default function Customer({
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
   useEffect(() => {
-    const storedFeedback = localStorage.getItem("feedback");
-    if (storedFeedback) {
-      setFeedbacks(JSON.parse(storedFeedback));
-    }
+    const fetchFeedbacks = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "dishFeedback")); // ✅ Firestore se `dishFeedback` collection read karein
+        const feedbackData: any = {};
+  
+        querySnapshot.forEach((doc) => {
+          feedbackData[doc.id] = doc.data();
+        });
+  
+        setFeedbacks(feedbackData);
+        console.log("Fetched Feedback:", feedbackData);
+      } catch (error) {
+        console.error("Error fetching feedback:", error);
+      }
+    };
+  
+    fetchFeedbacks();
   }, []);
+console.log(feedbacks);
 
 
 

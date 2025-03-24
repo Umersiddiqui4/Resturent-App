@@ -1,7 +1,7 @@
 "use client"
 
 import { DropdownMenuTrigger } from "../components/ui/dropdown-menu"
-import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, arrayUnion, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 
 
@@ -99,7 +99,6 @@ export function RestaurantMenu() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [cart, setCart] = useState<Record<number, number>>({23: 23})
   const [searchQuery, setSearchQuery] = useState("")
-  const [test, setTest] = useState();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
@@ -391,18 +390,25 @@ export function RestaurantMenu() {
     setIsDetailModalOpen(true)
   }
 
-  const saveRatingAndComment = () => {
+  const saveRatingAndComment = async () => {
     if (selectedDish && rating) {
-      const existingFeedback = JSON.parse(localStorage.getItem("feedback") || "{}");
-      const newFeedback = {
-        ...existingFeedback,
-        [selectedDish.id]: { rating, comment, selectedDish },
-      };
-
-      localStorage.setItem("feedback", JSON.stringify(newFeedback));
-
-      setDishRatings(newFeedback);
-      setIsDetailModalOpen(false);
+      try {
+        const feedbackRef = doc(db, "dishFeedback", selectedDish.id);
+  
+        const newFeedback = {
+          rating,
+          comment,
+          selectedDish,
+          user: activeUser || "anonymous",
+          createdAt: new Date().toISOString(),
+        };
+  
+        await setDoc(feedbackRef, newFeedback, { merge: true }); // ✅ Merge so it doesn't overwrite existing data
+  
+        console.log("Feedback saved successfully!");
+      } catch (error) {
+        console.error("Error saving feedback:", error);
+      }
     }
   };
 
