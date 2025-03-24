@@ -13,7 +13,6 @@ import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useAppContext } from "../context/AppContext"
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { User } from "../components/comp-manager/types";
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
@@ -43,12 +42,12 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
   }
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     try {
       // 🛑 Step 1: Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
-  
+
       // ✅ Step 2: Firestore mein user data store karein
       const userData = {
         uid: user.uid,
@@ -60,17 +59,17 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
       };
       localStorage.setItem("activeRestaurant", JSON.stringify(userData.restaurantName));
       localStorage.setItem("activeUser", JSON.stringify(userData));
-      
-  
+
+
       await setDoc(doc(db, "users", user.uid), userData);
-  
+
       // ✅ Step 3: Firestore se user data fetch karein
-      const userDoc : any = await getDoc(doc(db, "users", user.uid));
-  
+      const userDoc: any = await getDoc(doc(db, "users", user.uid));
+
       if (userDoc.exists()) {
         setActiveUser(userDoc.data());
         setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
-  
+
         setTimeout(() => {
           if (userData.role === "owner") {
             navigate("/dashboard");
@@ -85,7 +84,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
       setSnackbar({ open: true, message: error.message, severity: "error" });
     }
   };
-  
+
   console.log(accountType);
 
   return (
