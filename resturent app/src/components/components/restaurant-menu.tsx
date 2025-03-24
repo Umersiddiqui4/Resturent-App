@@ -1,7 +1,7 @@
 "use client"
 
 import { DropdownMenuTrigger } from "../components/ui/dropdown-menu"
-import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, arrayUnion, setDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 
 
@@ -108,7 +108,7 @@ export function RestaurantMenu() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [rating, setRating] = useState<number | null>(null)
   const [comment, setComment] = useState("")
-  const [dishRatings, setDishRatings] = useState<Record<number, { rating: number; comment: string }>>({})
+  const [dishRatings] = useState<Record<number, { rating: number; comment: string }>>({})
 
   const { activeUser, setActiveUser } = useAppContext();
   const { activeCategory, setActiveCategory } = useAppContext();
@@ -417,7 +417,7 @@ export function RestaurantMenu() {
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `images/${fileName}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("restaurant-images")
       .upload(filePath, file);
 
