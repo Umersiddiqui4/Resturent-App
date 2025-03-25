@@ -21,7 +21,7 @@ export function DishCard({
   return (
     <Card className="overflow-hidden ">
       <CardHeader className="p-0">
-        <div className="relative h-48 w-full">
+        <div className="relative sm:h-48 h-80 w-full">
           <img
             src={dish.image || "/placeholder.svg"}
             alt={dish.name}

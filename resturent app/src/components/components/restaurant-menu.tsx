@@ -1090,11 +1090,11 @@ export function RestaurantMenu() {
                 <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={saveRatingAndComment} disabled={!rating}>
+                <Button className="mb-3 sm:mb-0" onClick={saveRatingAndComment} disabled={!rating}>
                   Save Rating
                 </Button>
-                <Button onClick={() => { navigate("/customer") }} >
-                  Feedback
+                <Button className="mb-3 sm:mb-0" onClick={() => { navigate("/customer") }} >
+                  Feedbacks
                 </Button>
               </DialogFooter>
             </>
