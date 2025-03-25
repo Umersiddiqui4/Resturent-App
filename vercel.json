@@ -2,7 +2,7 @@
     "redirects": [
       {
         "source": "/me",
-        "destination": "/profile",
+        "destination": "/index",
         "permanent": false
       }
     ]
