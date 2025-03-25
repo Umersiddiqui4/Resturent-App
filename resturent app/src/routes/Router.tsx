@@ -1,7 +1,7 @@
 import LoginForm from "@/components/SignIn-form";
 import { RegisterForm } from "../components/Register-form";
 import { RestaurantMenu } from "@/components/components/restaurant-menu";
-import { BrowserRouter as Router, Routes, Route, BrowserRouter } from "react-router-dom";
+import { BrowserRouter as Routes, Route, BrowserRouter } from "react-router-dom";
 import RestaurentSelection from "@/components/RestaurentSelection";
   import Customer from "@/components/Customer";
 
