@@ -462,12 +462,12 @@ export function RestaurantMenu() {
                     
                     {/* Developer button start  */}
               
-              {/* <Badge variant={userRole === "owner" ? "destructive" : userRole === "user" ? "default" : "outline"}>
+              <Badge variant={userRole === "owner" ? "destructive" : userRole === "user" ? "default" : "outline"}>
                 {userRole === "owner" ? "Owner" : userRole === "user" ? "User" : "Guest"}
-              </Badge> */}
-              {/* <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
                 Switch Role
-              </Button> */}
+              </Button>
 
                     {/* Developer button end  */}
 
