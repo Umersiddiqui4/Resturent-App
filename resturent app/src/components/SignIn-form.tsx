@@ -23,6 +23,7 @@ const cn = (...classes: (string | boolean | undefined)[]) => {
 
 export default function SignIn({ className, ...props }: React.ComponentProps<"div">) {
   const { activeUser, setActiveUser } = useAppContext();
+  const { activeRestaurant, setActiveRestaurant } = useAppContext();
   const navigate = useNavigate();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -60,13 +61,23 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
       localStorage.setItem("activeUser", JSON.stringify(userData));
       // 🔹 Step 5: Show success message & navigate
       setSnackbar({ open: true, message: "Login Successful! Welcome back.", severity: "success" });
-      setTimeout(() => {
+
+        
         if (userData.role === "owner") {
+          const userDocRef = doc(db, "restaurants", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (!userDoc.exists()) {
+            setSnackbar({ open: true, message: "User data not found!", severity: "error" });
+            return;
+          }
+          const userData : any = userDoc.data() as User; 
+          setActiveRestaurant(userData);
+      localStorage.setItem("activeRestaurant", JSON.stringify(userData));
+
           navigate("/dashboard");
         } else {
           navigate("/restaurent-selection");
         }
-      }, 500);
 
     } catch (error: any) {
       setSnackbar({ open: true, message: "Login failed: " + error.message, severity: "error" });
