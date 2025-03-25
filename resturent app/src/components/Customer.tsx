@@ -42,7 +42,7 @@ export default function Customer({
   title = "Customer Reviews",
 }: CustomerReviewsProps) {
 
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [feedbacks] = useState<Feedback[]>([]);
   const [selectedDish, setSelectedDish] = useState<any>([]);
   const [matchedFeedback, setMatchedFeedback] = useState<any>([]);
   const [storedFeedbackId, setStoredFeedbackId] = useState<any>([]);

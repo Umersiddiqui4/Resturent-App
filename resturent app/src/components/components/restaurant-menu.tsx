@@ -1,7 +1,7 @@
 "use client"
 
 import { DropdownMenuTrigger } from "../components/ui/dropdown-menu"
-import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import type React from "react"
 import { useState, useEffect } from "react"
