@@ -33,3 +33,10 @@ export interface User {
   uid: string;
   email: string; 
 }
+export interface Restaurent {
+  createdAt: object
+  email: string
+  name: string
+  owner_Id: string
+  uid: string
+}

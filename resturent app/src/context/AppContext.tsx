@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { User } from "../components/comp-manager/types"; 
+import { User, Restaurent } from "../components/comp-manager/types"; 
 
 interface AppContextType {
   activeUser: User | null;
   setActiveUser: (user: User | null) => void;
   activeCategory: string | null;
   setActiveCategory: (category: string | null) => void;
-  activeRestaurant: string | null;
-  setActiveRestaurant: (restaurant: string | null) => void;
+  activeRestaurant: Restaurent | null;
+  setActiveRestaurant: (restaurant: Restaurent | null) => void;
   owners: User[];
   setOwners: (owners: User[]) => void;
 }
@@ -17,7 +17,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activeUser, setActiveUser] = useState<User | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeRestaurant, setActiveRestaurant] = useState<string | null>(null);
+  const [activeRestaurant, setActiveRestaurant] = useState<Restaurent | null>(null);
   const [owners, setOwners] = useState<User[]>([]);
 
   return (

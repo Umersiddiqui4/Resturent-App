@@ -42,32 +42,32 @@ const categories = [
 export function AppSidebar() {
   const { activeCategory, setActiveCategory } = useAppContext()
   const { activeUser } = useAppContext()
-  const { owners, setOwners } = useAppContext()
+  const { owners } = useAppContext()
   const {activeRestaurant, setActiveRestaurant} = useAppContext()
   const [restaurants, setRestaurants] = useState<User[]>()
 
   useEffect(() => {
-    const fetchOwners = async () => {
+    const fetchRestaurants = async () => {
       try {
-        const usersCollection = collection(db, "users");
-        const q = query(usersCollection, where("role", "==", "owner"));
-        const snapshot = await getDocs(q);
-        const ownersList: User[] = snapshot.docs.map(doc => ({
-          ...(doc.data() as User),
-          restaurantName: doc.data().restaurantName || ""
+        const restaurantsCollection = collection(db, "restaurants"); // 🔥 "restaurants" collection ka reference
+        const snapshot = await getDocs(restaurantsCollection);
+  
+        const restaurantList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...(doc.data() as any),
         }));
-
-        setOwners(ownersList);
-        setRestaurants(ownersList);
-
+  
+        setRestaurants(restaurantList); // State update karega
+  
       } catch (error) {
-        console.error("Error fetching owners:", error);
+        console.error("Error fetching restaurants:", error);
       }
     };
+  
+    fetchRestaurants();
+  }, []); // 🔥 Empty dependency array taake sirf ek baar chale
 
-    fetchOwners();
-  }, []);
-
+  
   useEffect(() => {
     const storedRestaurant = localStorage.getItem("activeRestaurant")
     if (storedRestaurant) {
@@ -76,15 +76,15 @@ export function AppSidebar() {
     setRestaurants(owners)
   }, [activeUser])
 
-  useEffect(() => {
-    if (activeRestaurant === "" && activeUser?.restaurantName) {
-      setActiveRestaurant(activeUser.restaurantName);
-    }
-  }, [activeUser]);
+  // useEffect(() => {
+  //   if (activeRestaurant === "" && activeUser?.restaurantName) {
+  //     setActiveRestaurant(activeUser.restaurantName);
+  //   }
+  // }, [activeUser]);
 
   const handleRestaurantChange = (restaurant: any) => {
-    setActiveRestaurant(restaurant.restaurantName)
-    localStorage.setItem("activeRestaurant", JSON.stringify(restaurant.restaurantName))
+    setActiveRestaurant(restaurant)
+    localStorage.setItem("activeRestaurant", JSON.stringify(restaurant))
   }
   return (
     <Sidebar>
@@ -95,14 +95,14 @@ export function AppSidebar() {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center font-bold hover:text-primary focus:outline-none">
                 <span>
-                  {typeof activeRestaurant === "string" && activeRestaurant.length > 0
-                    ? activeRestaurant.charAt(0).toUpperCase() + activeRestaurant.slice(1)
+                  {activeRestaurant 
+                    ? activeRestaurant.name.charAt(0).toUpperCase() + activeRestaurant.name.slice(1)
                     : "No Restaurant Selected"}
                 </span>
                 <ChevronDown className="ml-1 h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            {activeUser?.restaurantName !== activeRestaurant && (
+            {activeRestaurant && activeRestaurant.uid !== activeUser?.uid && (
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuItem className="text-sm font-medium text-muted-foreground" disabled>
                   Select Restaurant
@@ -114,12 +114,12 @@ export function AppSidebar() {
                       key={restaurant.name}
                       className={cn(
                         "cursor-pointer",
-                        (String(activeUser?.restaurantName) || String(activeRestaurant)) === restaurant.restaurantName &&
+                        (String(activeRestaurant.name)) === restaurant.name &&
                         "font-medium text-primary",
                       )}
                       onClick={() => handleRestaurantChange(restaurant)}
                     >
-                      {(String(restaurant?.restaurantName || "").charAt(0).toUpperCase() + String(restaurant?.restaurantName || "").slice(1))} Restaurant
+                      {(String(restaurant?.name || "").charAt(0).toUpperCase() + String(restaurant?.name || "").slice(1))} Restaurant
                     </DropdownMenuItem>
                   ))
                 ) : (
