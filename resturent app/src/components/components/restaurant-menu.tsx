@@ -3,8 +3,6 @@
 import { DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
-
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { PlusCircle, Grid, List, Filter, SlidersHorizontal, GripVertical } from "lucide-react"
@@ -97,7 +95,7 @@ export function RestaurantMenu() {
   const [editingDish, setEditingDish] = useState<Dish | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [cart, setCart] = useState<Record<number, number>>({23: 23})
+  const [cart, setCart] = useState<Record<number, number>>({ 23: 23 })
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
@@ -310,6 +308,7 @@ export function RestaurantMenu() {
   useEffect(() => {
     fetchAllDishes();
     setCart({});
+    setActiveCategory("")
   }, [activeRestaurant]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,11 +322,9 @@ export function RestaurantMenu() {
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category)
     setActiveCategory(category)
-
   }
   const handleCategorySelectForSideBaR = () => {
     setSelectedCategory(activeCategory)
-
   }
 
   const clearFilters = () => {
@@ -336,7 +333,6 @@ export function RestaurantMenu() {
     setSortOrder("custom")
     setShowVegetarian(false)
   }
-
   // Update this line to ensure it includes categories from newly added dishes
   const categories = [
     "Pizza",
@@ -347,7 +343,6 @@ export function RestaurantMenu() {
     "Dessert",
     "Drinks"
   ];
-
   // Handle drag end event
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return; // Dropped outside the list
@@ -390,22 +385,29 @@ export function RestaurantMenu() {
     setIsDetailModalOpen(true)
   }
 
+  useEffect(() => {
+    localStorage.setItem("feedbackId", JSON.stringify(selectedDish?.id));
+  }, [selectedDish])
+
+
   const saveRatingAndComment = async () => {
     if (selectedDish && rating) {
       try {
-        const feedbackRef = doc(db, "dishFeedback", selectedDish.id);
-  
+        const feedbackRef = collection(db, "dishFeedback", selectedDish.id, "comments"); // ✅ Subcollection 'comments'
+
         const newFeedback = {
           rating,
           comment,
-          selectedDish,
           user: activeUser || "anonymous",
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
+          selectedDish
         };
-  
-        await setDoc(feedbackRef, newFeedback, { merge: true }); // ✅ Merge so it doesn't overwrite existing data
-  
+
+        await addDoc(feedbackRef, newFeedback); // ✅ Each comment will be a new document
         console.log("Feedback saved successfully!");
+        setIsDetailModalOpen(!isDetailModalOpen);
+        setComment("");
+        setRating(0);
       } catch (error) {
         console.error("Error saving feedback:", error);
       }

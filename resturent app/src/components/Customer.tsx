@@ -7,6 +7,7 @@ import { Separator } from "./components/ui/separator"
 import { Star } from "lucide-react"
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
+import { DishCard } from "./components/dish-card-feedback";
 
 interface Review {
   id: string;
@@ -40,6 +41,26 @@ export default function Customer({
   reviews = defaultReviews,
   title = "Customer Reviews",
 }: CustomerReviewsProps) {
+
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [selectedDish, setSelectedDish] = useState<any>([]);
+  const [matchedFeedback, setMatchedFeedback] = useState<any>([]);
+  const [storedFeedbackId, setStoredFeedbackId] = useState<any>([]);
+
+  const imageUrls = [
+    "https://lh3.googleusercontent.com/o4LgaHPHAOBOa_SEi1PywFSN5OLt-1-wSW0DdzyhN93ecj42bSLgFFcXAaY3qf9S01vRAYy-gk-YZ5jWRXVbkRsLOGY=s274",
+    "https://lh3.googleusercontent.com/maTUQ3Ta1FoqleO_3xL8TKkFg9kEh5_H_EncsHkk9Bfkeqi6n3cZt39tngZH4DxjbB4fHW2B09aBC2NVOGqgQzoMjg=s274",
+    "https://lh3.googleusercontent.com/wTpHV8D9ClLAVLv9L7iWhXovWhiEJGOYuSInCaX3Mr-Uf9DO_Z2PtBTtkeiFnxdBErHyM8ZkqgjTD5s-_kob7ETPZQ=s274",
+    "https://lh3.googleusercontent.com/ZqSxpU7fblRYQOwqqBa2SO4sCY7NJozzKNncnxj1P8uCKrDWHuU9qqmmaRoH4FgH0qnTjSP6AEwDVqw8hdMF-wou=s274",
+    "https://lh3.googleusercontent.com/nCDf_xgCbqq4oj13H-JiiJirvNT0Ryw3ja2L8L-Ee7MKKkPpo1HVR96YEonHL3kEjEoXZw_hLgS337igGMdMBR8YrQ=s274",
+    "https://lh3.googleusercontent.com/xEaWGLkuu-l8lARoV0kSXu1DsqwSB-Iv0c7TMHYfwNJ1yundZzNKtXB2ga3W2g1VFe9EeiE7JnPq8IMgYr_6oKfT6L4=s274",
+    "https://lh3.googleusercontent.com/LAhteYg76zIknMeQoDOQ24LuUxj5y2ssuCpwuP4R9_mZQaLUYWEiPjfEtvQIygr7GJzQZIuBIm_kN0g8tRAXTNoztjc=s274",
+    "https://lh3.googleusercontent.com/EqL-hRovyAIqH3l472FzU-97GTX_xIPz6bdV7YJXx6M_lgRPi6KluCkXqlJd5AAm0euUJNJvpSjAmcNWw7xtdBhs6w=s274",
+    "https://lh3.googleusercontent.com/zw40mVwEu2KBDKJQSDtL7mDkol1xDiB3CxIObJXlcmKsSB85GDD8STSrzQe7ZWGu6mNb608ETrT1L4CYINrjY9AJ=s248",
+    "https://lh3.googleusercontent.com/lNXUwGZf6b2_brqsNLOgvziyB4bi5S7BDcxvM9gT292KoayzU0kQs7tlklMEOIg-i1n2p92rlor8FV1quAz1rehB=s248"
+  ];
+
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme-preference")
 
@@ -52,34 +73,52 @@ export default function Customer({
         document.documentElement.classList.add("dark")
       }
     }
+    setStoredFeedbackId(JSON.parse(localStorage.getItem("feedbackId")?.trim() || ""))
   }, [])
 
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  useEffect(() => {
+    if (!storedFeedbackId) return;
+    const feedbackArray = Object.entries(feedbacks).map(([id, data]) => ({
+      id: id.trim(),
+      ...(data as any),
+    }));
+    const matchedFeedback = feedbackArray.filter((feedback) => feedback.id === storedFeedbackId)
+    setMatchedFeedback(matchedFeedback);
+  }, [feedbacks]);
 
   useEffect(() => {
-    const fetchFeedbacks = async () => {
+    if (matchedFeedback) {
+      setSelectedDish(matchedFeedback); // ✅ Selected dish update karein
+    }
+  }, [feedbacks, matchedFeedback]);
+
+  useEffect(() => {
+    const fetchDishFeedback = async (dishId: string) => {
+      if (!dishId || typeof dishId !== "string") {
+        console.error("Invalid dishId:", dishId); // ✅ Debugging ke liye
+        return;
+      }
+
       try {
-        const querySnapshot = await getDocs(collection(db, "dishFeedback")); // ✅ Firestore se `dishFeedback` collection read karein
-        const feedbackData: any = {};
-  
-        querySnapshot.forEach((doc) => {
-          feedbackData[doc.id] = doc.data();
-        });
-  
-        setFeedbacks(feedbackData);
-        console.log("Fetched Feedback:", feedbackData);
+        const feedbackRef = collection(db, "dishFeedback", dishId, "comments"); // ✅ Subcollection reference
+        const querySnapshot = await getDocs(feedbackRef);
+
+        const feedbackList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        console.log("Fetched Feedbacks:", feedbackList);
+        setSelectedDish(feedbackList)
+        return feedbackList;
+
       } catch (error) {
         console.error("Error fetching feedback:", error);
       }
     };
-  
-    fetchFeedbacks();
-  }, []);
-console.log(feedbacks);
-
-
-
-
+    fetchDishFeedback(storedFeedbackId);
+  }, [storedFeedbackId]);
+  console.log(selectedDish, "selecteddish");
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 md:py-8 transition-colors duration-200 bg-background text-foreground">
@@ -88,52 +127,56 @@ console.log(feedbacks);
           {title} ({reviews.length})
         </h2>
       </div>
+      {selectedDish.length > 0 && <DishCard dish={selectedDish[0]} />}
 
       <div className="space-y-4 md:space-y-6">
-      {feedbacks && Object.keys(feedbacks).length > 0 ? (
-  Object.values(feedbacks).map((review, index) => (
-          <div key={review.id}>
-            <Card className="overflow-hidden border dark:border-gray-700">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                  <Avatar className="h-10 w-10 border dark:border-gray-600 shrink-0">
-                    <AvatarImage src={review?.selectedDish?.image} alt={review.selectedDish.name} />
-                    
-                  </Avatar>
+        {selectedDish && Object.keys(selectedDish).length > 0 ? (
+          Object.values(selectedDish).map((review: any, index) => (
+            <div key={review.id}>
+              <Card className="overflow-hidden border dark:border-gray-700">
+                <CardContent className="p-4 ">
+                  <div className="flex sm:flex-row sm:items-start gap-4">
+                    <Avatar className="h-20 w-20 border dark:border-gray-600 shrink-0">
+                      <AvatarImage src={imageUrls[index]} alt={review.user.name} />
 
-                  <div className="flex-1 space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <h3 className="font-medium">{review.selectedDish.name}</h3>
-                        {/* <p className="text-xs sm:text-sm text-muted-foreground">{review.date}</p> */}
+                    </Avatar>
+
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <h3 className="font-medium">{review.user.name}</h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {review.createdAt?.seconds
+                              ? new Date(review.createdAt.seconds * 1000).toLocaleString()
+                              : "N/A"}
+                          </p>
+                        </div>
+
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 sm:w-5 sm:h-5 ${i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400 dark:fill-yellow-300 dark:text-yellow-300"
+                                  : "fill-muted stroke-muted-foreground"
+                                }`}
+                            />
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                              i < review.rating
-                                ? "fill-yellow-400 text-yellow-400 dark:fill-yellow-300 dark:text-yellow-300"
-                                : "fill-muted stroke-muted-foreground"
-                            }`}
-                          />
-                        ))}
-                      </div>
+                      <p className="text-lg sm:text-2xl md:xl leading-relaxed">{review.comment}</p>
                     </div>
-
-                    <p className="text-xs sm:text-sm md:text-base leading-relaxed">{review.comment}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {index < reviews.length - 1 && <Separator className="my-4 md:my-6 md:hidden" />}
-          </div>
-       ))
-      ) : (
-        <p>No feedback available.</p>
-)}
+              {index < reviews.length - 1 && <Separator className="my-4 md:my-6 md:hidden" />}
+            </div>
+          ))
+        ) : (
+          <p>No feedback available.</p>
+        )}
       </div>
     </div>
   )

@@ -8,7 +8,7 @@ export interface Dish {
   displayOrder: number;
   restaurent: string | undefined
   createdAt: string;
-  
+  selectedDish?: any
 }
 
 
