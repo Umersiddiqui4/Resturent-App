@@ -457,14 +457,21 @@ export function RestaurantMenu() {
         <TopNavbar onSearch={handleSearch} searchQuery={searchQuery} />
         <div className="flex min-h-screen flex-col">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
-            <h1 className="text-xl font-semibold">Restaurant Menu</h1>
+            <h1 className="text-xl font-semibold"></h1>
             <div className="flex items-center ml-4">
-              <Badge variant={userRole === "owner" ? "destructive" : userRole === "user" ? "default" : "outline"}>
+                    
+                    {/* Developer button start  */}
+              
+              {/* <Badge variant={userRole === "owner" ? "destructive" : userRole === "user" ? "default" : "outline"}>
                 {userRole === "owner" ? "Owner" : userRole === "user" ? "User" : "Guest"}
-              </Badge>
-              <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
+              </Badge> */}
+              {/* <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
                 Switch Role
-              </Button>
+              </Button> */}
+
+                    {/* Developer button end  */}
+
+
             </div>
 
             {/* Filter and Sort Controls */}
