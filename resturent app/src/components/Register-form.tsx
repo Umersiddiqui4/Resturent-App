@@ -55,14 +55,24 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
         email: formData.email,
         role: accountType, // Default role (change if needed)
         createdAt: new Date(), // Timestamp for tracking
-        restaurantName: formData.restaurantName,
       };
-      localStorage.setItem("activeRestaurant", JSON.stringify(userData.restaurantName));
-      localStorage.setItem("activeUser", JSON.stringify(userData));
-
-
+  
       await setDoc(doc(db, "users", user.uid), userData);
-
+  
+      // ✅ Step 3: Agar user "owner" hai to restaurant ka data bhi save karein
+      if (accountType === "owner") {
+        const restaurantData = {
+          uid: user.uid, 
+          name: formData.restaurantName,
+          email: formData.email,
+          owner_Id: user.uid, 
+          createdAt: new Date(),
+        };
+  
+        await setDoc(doc(db, "restaurants", user.uid), restaurantData);
+        localStorage.setItem("activeRestaurant", JSON.stringify(restaurantData.name));
+      }
+  
       // ✅ Step 3: Firestore se user data fetch karein
       const userDoc: any = await getDoc(doc(db, "users", user.uid));
 
