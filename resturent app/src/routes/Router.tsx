@@ -9,7 +9,6 @@ export default function AppRouter() {
 
   return (
     <BrowserRouter basename="/">
-    <Router>
       <Routes>
         <Route path="/" element={<LoginForm />} />
         <Route path="/dashboard" element={<RestaurantMenu />} />
@@ -17,7 +16,6 @@ export default function AppRouter() {
         <Route path="/customer" element={<Customer />} />
         <Route path="/restaurent-selection" element={<RestaurentSelection />} />
       </Routes>
-    </Router>
     </BrowserRouter>
   );
 }
