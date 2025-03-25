@@ -1,10 +1,7 @@
 {
-    "redirects": [
-      {
-        "source": "/me",
-        "destination": "/index",
-        "permanent": false
-      }
+    "rewrites": [
+      { "source": "/dashboard", "destination": "/index.html" },
+      { "source": "/:path*", "destination": "/index.html" }
     ]
   }
   

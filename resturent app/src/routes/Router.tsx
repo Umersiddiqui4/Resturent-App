@@ -1,13 +1,14 @@
 import LoginForm from "@/components/SignIn-form";
 import { RegisterForm } from "../components/Register-form";
 import { RestaurantMenu } from "@/components/components/restaurant-menu";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, BrowserRouter } from "react-router-dom";
 import RestaurentSelection from "@/components/RestaurentSelection";
   import Customer from "@/components/Customer";
 
 export default function AppRouter() {
 
   return (
+    <BrowserRouter basename="/">
     <Router>
       <Routes>
         <Route path="/" element={<LoginForm />} />
@@ -17,5 +18,6 @@ export default function AppRouter() {
         <Route path="/restaurent-selection" element={<RestaurentSelection />} />
       </Routes>
     </Router>
+    </BrowserRouter>
   );
 }
