@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Home, UtensilsCrossed, Coffee, Pizza, Salad, Fish, Beef, Cake, ListFilter, ChevronDown } from "lucide-react"
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../firebase/firebaseConfig";
 import { cn } from "@/lib/utils"
 import {
   Sidebar,
@@ -27,6 +25,7 @@ import {
 } from "../components/ui/dropdown-menu"
 import { User } from "../comp-manager/types"
 import { useRestaurants } from "../api/useRestaurants";
+import ListSkeleton from "../comp-manager/list_skeleton"
 
 const categories = [
   { name: "All Items", icon: Home },
@@ -56,7 +55,50 @@ export function AppSidebar() {
   }, [activeUser, owners])
 
   const { loading, error } = useRestaurants();
-  if (loading) return <p>Loading restaurants...</p>;
+  if (loading)
+   {return  <Sidebar>
+  <SidebarHeader className="border-b">
+    <div className="flex h-14 items-center px-4">
+      <UtensilsCrossed className="mr-2 h-6 w-6" />
+      <ListSkeleton />
+    </div>
+  </SidebarHeader>
+  <SidebarContent>
+    <SidebarGroup>
+      <SidebarGroupLabel>Menu Categories</SidebarGroupLabel>
+      <SidebarMenu>
+        {categories.map((category) => (
+          <SidebarMenuItem key={category.name}>
+            <SidebarMenuButton
+              asChild
+              isActive={category.name === activeCategory}
+              onClick={() => setActiveCategory(category.name)}
+            >
+              <a href="#" className={cn("flex items-center")}>
+                <category.icon className="mr-2 h-4 w-4" />
+                <span>{category.name}</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+    {/* Special Offers Section */}
+    <SidebarGroup>
+      <SidebarGroupLabel>Special Offers</SidebarGroupLabel>
+      <div className="px-3 py-2">
+        <div className="rounded-md bg-primary/10 p-3 text-sm">
+          <h4 className="font-medium text-primary">Today's Special</h4>
+          <p className="mt-1 text-xs text-muted-foreground">Get 20% off on all seafood dishes today!</p>
+          <Button size="sm" variant="outline" className="mt-2 w-full text-xs">
+            View Offer
+          </Button>
+        </div>
+      </div>
+    </SidebarGroup>
+  </SidebarContent>
+  <SidebarRail />
+  </Sidebar>};
   if (error) return <p>Error: {error}</p>;
 
   const handleRestaurantChange = (restaurant: any) => {
