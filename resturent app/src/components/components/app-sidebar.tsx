@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
 import { User } from "../comp-manager/types"
+import { useRestaurants } from "../api/useRestaurants";
 
 const categories = [
   { name: "All Items", icon: Home },
@@ -43,44 +44,20 @@ export function AppSidebar() {
   const { activeCategory, setActiveCategory } = useAppContext()
   const { activeUser } = useAppContext()
   const { owners } = useAppContext()
-  const {activeRestaurant, setActiveRestaurant} = useAppContext()
+  const { activeRestaurant, setActiveRestaurant } = useAppContext()
   const [restaurants, setRestaurants] = useState<User[]>()
 
-  useEffect(() => {
-    const fetchRestaurants = async () => {
-      try {
-        const restaurantsCollection = collection(db, "restaurants"); // 🔥 "restaurants" collection ka reference
-        const snapshot = await getDocs(restaurantsCollection);
-  
-        const restaurantList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...(doc.data() as any),
-        }));
-  
-        setRestaurants(restaurantList); // State update karega
-  
-      } catch (error) {
-        console.error("Error fetching restaurants:", error);
-      }
-    };
-  
-    fetchRestaurants();
-  }, []); // 🔥 Empty dependency array taake sirf ek baar chale
-
-  
   useEffect(() => {
     const storedRestaurant = localStorage.getItem("activeRestaurant")
     if (storedRestaurant) {
       setActiveRestaurant(JSON.parse(storedRestaurant))
     }
     setRestaurants(owners)
-  }, [activeUser])
+  }, [activeUser, owners])
 
-  // useEffect(() => {
-  //   if (activeRestaurant === "" && activeUser?.restaurantName) {
-  //     setActiveRestaurant(activeUser.restaurantName);
-  //   }
-  // }, [activeUser]);
+  const { loading, error } = useRestaurants();
+  if (loading) return <p>Loading restaurants...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   const handleRestaurantChange = (restaurant: any) => {
     setActiveRestaurant(restaurant)
@@ -95,7 +72,7 @@ export function AppSidebar() {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center font-bold hover:text-primary focus:outline-none">
                 <span>
-                  {activeRestaurant 
+                  {activeRestaurant?.name
                     ? activeRestaurant.name.charAt(0).toUpperCase() + activeRestaurant.name.slice(1)
                     : "No Restaurant Selected"}
                 </span>

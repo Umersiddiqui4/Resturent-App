@@ -1,18 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
 import { useAppContext } from "@/context/AppContext";
-import { User } from "../components/comp-manager/types";
+import { useRestaurants } from "./api/useRestaurants";
+import LoadingSkeleton from "./comp-manager/Loading_skeleton";
 
 
 function RestaurentSelection() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const { owners, setOwners } = useAppContext()
+  const { owners } = useAppContext()
   const navigate = useNavigate();
-  const [value, setValue] = useState("")
+  const [value, setValue] = useState<any>("")
+  const { loading, error } = useRestaurants();
+
+  if (loading) {
+    return <div
+      className="min-h-screen transition-all duration-1000 ease-in-out  p-4 md:p-8"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        backgroundColor: backgroundImage ? undefined : "#f5f5f5",
+      }}
+    >
+      <div className="container mx-auto transition-all duration-700 ">
+        <h1 className="text-2xl md:text-4xl font-bold mb-6 text-white transition-colors duration-700 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          Select a Restaurant
+        </h1>
+        <LoadingSkeleton />
+        {backgroundImage && (
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="mt-6 px-4 py-2 bg-white/100 hover:bg-white text-black rounded-md font-bold  transition-all duration-300 transform hover:scale-105 backdrop-blur-sm"
+          >
+            {value ? value.charAt(0).toUpperCase() + value.slice(1) : "Select plzz.."}
+          </button>
+        )}
+      </div>
+    </div>
+  };
+  if (error) return <p>Error: {error}</p>;
 
   const images = [
     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cmVzdGF1cmFudHxlbnwwfHwwfHx8MA%3D%3D",
@@ -26,32 +55,10 @@ function RestaurentSelection() {
     "https://assets.architecturaldigest.in/photos/64f85037ec0bc118bdd98aba/master/pass/Untitled%20design%20(14).png",
     "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0e/c2/ff/0b/marcopolo.jpg?w=600&h=-1&s=1",
   ];
-
-  useEffect(() => {
-    const fetchOwners = async () => {
-      try {
-        const usersCollection = collection(db, "users");
-        const q = query(usersCollection, where("role", "==", "owner"));
-        const snapshot = await getDocs(q);
-        const ownersList: User[] = snapshot.docs.map(doc => ({
-          ...(doc.data() as User),
-          restaurantName: doc.data().restaurantName || ""
-        }));
-
-        setOwners(ownersList);
-
-      } catch (error) {
-        console.error("Error fetching owners:", error);
-      }
-    };
-
-    fetchOwners();
-  }, []);
-
   const handleImageClick = (image: string, owner: any) => {
     setBackgroundImage(image);
-    setValue(owner.restaurantName);
-    localStorage.setItem("activeRestaurant", JSON.stringify(owner.restaurantName));
+    setValue(owner);
+    localStorage.setItem("activeRestaurant", JSON.stringify(owner));
   };
   return (
     <div
@@ -79,22 +86,21 @@ function RestaurentSelection() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-70" />
               <img
                 src={images[index % images.length]}
-                alt={owner.restaurantName}
+                alt={owner.name}
                 className="absolute inset-0 w-full h-full object-cover "
               />
               <div className="absolute bottom-2 left-2 text-white text-lg  font-bold z-10 backdrop-blur-sm">
-                {(owner.restaurantName ? owner.restaurantName.charAt(0).toUpperCase() + owner.restaurantName.slice(1) : "Unknown")} Restaurant
+                {(owner.name ? owner.name.charAt(0).toUpperCase() + owner.name.slice(1) : "Unknown")} Restaurant
               </div>
             </div>
           ))}
         </div>
-
         {backgroundImage && (
           <button
             onClick={() => navigate("/dashboard")}
             className="mt-6 px-4 py-2 bg-white/100 hover:bg-white text-black rounded-md font-bold  transition-all duration-300 transform hover:scale-105 backdrop-blur-sm"
           >
-            {value ? value.charAt(0).toUpperCase() + value.slice(1) : "Select plzz.."}
+            {value ? value.name.charAt(0).toUpperCase() + value.name.slice(1) : "Select plzz.."}
           </button>
         )}
       </div>
