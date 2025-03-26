@@ -100,7 +100,7 @@ export function RestaurantMenu() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
-  const [userRole, setUserRole] = useState<"owner" | "user" | "guest">("user")
+  const [userRole, setUserRole] = useState<"owner" | "user" | undefined >("user")
   const navigate = useNavigate();
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
@@ -125,13 +125,12 @@ export function RestaurantMenu() {
   }, []);
 
   console.log(dishes, "dishes");
-  console.log(activeRestaurant, "activerest");
+  console.log(activeRestaurant, "activerestaurant");
 
   const toggleUserRole = () => {
     setUserRole((prev) => {
       if (prev === "owner") return "user"
-      if (prev === "user") return "guest"
-      return "owner"
+      if (prev === "user") return "owner"
     })
   }
 
@@ -230,10 +229,7 @@ export function RestaurantMenu() {
       const updatedDishes = dishes.map((dish) =>
         dish.id === editingDish.id ? editingDish : dish
       );
-
       setDishes(updatedDishes);
-      localStorage.setItem("dishes", JSON.stringify(updatedDishes));
-
       setIsEditDialogOpen(false);
       setEditingDish(null);
 
@@ -247,13 +243,6 @@ export function RestaurantMenu() {
     try {
       const dishRef = doc(db, "dishes", id);
       await deleteDoc(dishRef); // ✅ Firestore se delete karein
-
-      localStorage.removeItem(`dish-image-${id}`);
-
-      const updatedDishes = dishes.filter((dish) => dish.id !== id);
-      setDishes(updatedDishes);
-      localStorage.setItem("dishes", JSON.stringify(updatedDishes));
-
       console.log("Dish deleted successfully from Firestore!");
     } catch (error) {
       console.error("Error deleting dish from Firestore:", error);
@@ -462,8 +451,8 @@ export function RestaurantMenu() {
                     
                     {/* Developer button start  */}
               
-              <Badge variant={userRole === "owner" ? "destructive" : userRole === "user" ? "default" : "outline"}>
-                {userRole === "owner" ? "Owner" : userRole === "user" ? "User" : "Guest"}
+              <Badge variant={userRole === "owner" ? "destructive" : "default"}>
+                {userRole === "owner" ? "Owner" : "User"}
               </Badge>
               <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
                 Switch Role
