@@ -59,6 +59,8 @@ import MenuItem from "@mui/material/MenuItem"
 import type { User } from "../comp-manager/types"
 import { getCategoriesFromFirestore, uploadCategoriesToFirestore, useRestaurants } from "../api/useRestaurants"
 import ListSkeleton from "../comp-manager/list_skeleton"
+import fetchCategoriesAndItems from "../api/categoreis&item"
+import {createCategory, uploadItemsToCategory} from "../api/categoriesUpload"
 
 // Define all available icons
 const iconOptions = {
@@ -222,7 +224,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={category.name === activeCategory}
-                    onClick={() => setActiveCategory(category.name)}
+                    onClick={() => setActiveCategory("")}
                   >
                     <a href="#" className={cn("flex items-center")}>
                       <category.icon className="mr-2 h-4 w-4" />
@@ -269,6 +271,8 @@ export function AppSidebar() {
       const updatedCategories = [newCategory]
       setCustomCategories(updatedCategories)
 
+      const restaurantId: any = activeRestaurant?.uid;
+
       const categoriesToStore: StoredCategory[] = updatedCategories.map((cat) => {
         const iconKey =
           (Object.entries(iconOptions).find(([_, icon]) => icon === cat.icon)?.[0] as keyof typeof iconOptions) ||
@@ -277,10 +281,13 @@ export function AppSidebar() {
         return {
           name: cat.name,
           iconKey: iconKey,
+          category_id: restaurantId
         }
       })
-      const restaurantId: any = activeRestaurant?.uid;
-      uploadCategoriesToFirestore(restaurantId, categoriesToStore);
+      // uploadCategoriesToFirestore(restaurantId, categoriesToStore);
+     
+      createCategory(restaurantId,categoriesToStore);
+
       setNewCategoryName("")
       setSelectedIcon("Other") 
       setDialogOpen(false)
@@ -366,7 +373,8 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={category.name === activeCategory}
-                  onClick={() => setActiveCategory(category.name)}
+                  onClick={() => setActiveCategory(category.name === "All Items" ? null : category.name)}
+
                 >
                   <a href="#" className={cn("flex items-center")}>
                     {category.icon && <category.icon className="mr-2 h-4 w-4" />}

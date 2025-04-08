@@ -10,7 +10,7 @@ export function DishList({ dish, onEdit, onDelete, onAddToCart, isInCart = 0, on
   return (
     <div className="flex items-center gap-4 rounded-lg border p-4 cursor-pointer" onClick={() => onClick && onClick()}>
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md">
-        <img src={dish.image || "/placeholder.svg"} alt={dish.name} className="h-full w-full object-cover" />
+        <img src={dish.imageUrl || "/placeholder.svg"} alt={dish.name} className="h-full w-full object-cover" />
       </div>
       <div className={cn("flex-1 min-w-0")}>
         <div className="flex items-center justify-between">

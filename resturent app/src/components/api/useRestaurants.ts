@@ -76,4 +76,21 @@ export const getCategoriesFromFirestore = async (restaurantId: string) => {
     return [];
   }
 };
+export const getCategoriesFromFire = async (restaurantId: string) => {
+  try {
+    const categoriesCollectionRef = collection(db, "pizza", "x5up6Wk6DzywQBNuBRPT"); // Subcollection ka reference
+    const snapshot = await getDocs(categoriesCollectionRef);
+
+    const categories = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    console.log("Categories fetched successfully: ", categories);
+    return categories;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
+};
 

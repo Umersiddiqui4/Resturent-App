@@ -95,7 +95,6 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     }
   };
 
-  console.log(accountType);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">

@@ -15,16 +15,18 @@ export function DishCard({
   onAddToCart = () => { },
   isInCart = 0,
   onClick,
+  category
 }: DishCardProps) {
   const { activeUser } = useAppContext();
   const { activeRestaurant } = useAppContext()
+  
   return (
     <Card className="overflow-hidden ">
       <CardHeader className="p-0">
         <div className="relative sm:h-48 h-80 w-full">
           <img
-            src={dish.image || "/placeholder.svg"}
-            alt={dish.name}
+            src={dish.items[0].imageUrl || "/placeholder.svg"}
+            alt={dish.items[0].name}
             className="absolute inset-0 h-full w-full object-cover"
           />
           {onEdit && onDelete && (
@@ -63,7 +65,7 @@ export function DishCard({
               </DropdownMenu>
             </div>
           )}
-          {onAddToCart && activeUser?.restaurantName !== activeRestaurant && (
+          {onAddToCart && activeUser?.uid !== activeRestaurant?.owner_Id && (
             <div className="absolute right-2 bottom-2">
               <Button
                 variant="default"
@@ -71,7 +73,7 @@ export function DishCard({
                 className="bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onAddToCart(dish.id)
+                  onAddToCart(dish.items[0].id)
                 }}
               >
                 {isInCart ? "Add Another" : "Add to Cart"}
@@ -90,14 +92,16 @@ export function DishCard({
       >
         <div className="mb-2 flex items-center justify-between">
           <h3 className="font-semibold">
-            {dish.name.charAt(0).toUpperCase() + dish.name.slice(1)}
+            {dish?.items[0]?.name?.charAt(0).toUpperCase() + dish?.items[0]?.name?.slice(1)}
           </h3>
-          <span className="font-medium text-primary">${dish.price.toFixed(2)}</span>
+          <span className="font-medium text-primary">${dish?.items[0]?.price?.toFixed(2)}</span>
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2">{dish.description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{dish.items[0].description}</p>
       </CardContent>
       <CardFooter className="border-t p-4 pt-2">
-        <span className="text-xs font-medium text-muted-foreground">{dish.category}</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            {dish.name}
+          </span>
       </CardFooter>
     </Card>
   )

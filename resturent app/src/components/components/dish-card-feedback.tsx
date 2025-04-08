@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils"
 export function DishCard({
   dish,
 }: DishCardProps) {
-  console.log(dish,"carddish");
   return (
     <Card className="overflow-hidden mb-4">
       <CardHeader className="p-0">

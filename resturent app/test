@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDo
 import { db } from "../../firebase/firebaseConfig"
 import type React from "react"
 import { useState, useEffect } from "react"
-import { PlusCircle, Grid, List, Filter, SlidersHorizontal, GripVertical, ChefHat, Search } from "lucide-react"
+import { PlusCircle, Grid, List, Filter, SlidersHorizontal, GripVertical } from "lucide-react"
 import {
   Home,
   UtensilsCrossed,
@@ -25,10 +25,7 @@ import {
   Drumstick,
   Croissant,
   Egg,
-  ShoppingCart,
-
 } from "lucide-react"
-
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -67,7 +64,6 @@ import { getCategoriesFromFirestore } from "../api/useRestaurants"
 import fetchCategoriesAndItems from "../api/categoreis&item"
 import { log } from "console"
 import { uploadItemsToCategory, createCategory } from "../api/categoriesUpload"
-import { Description } from "@radix-ui/react-dialog"
 
 // Sample dish data
 const initialDishes: Dish[] = [
@@ -215,7 +211,6 @@ export function RestaurantMenu() {
 
   // Filter and sort dishes
   const filteredDishes = dishes
-
     .filter((dish) => {
       // Ensure items exist
       if (!dish.items || dish.items.length === 0) {
@@ -239,7 +234,7 @@ export function RestaurantMenu() {
       }
 
       // Category filter
-      if (selectedCategory && selectedCategory.name !== "All Items") {
+      if (selectedCategory && selectedCategory !== "All Items") {
         if (dish.name !== selectedCategory) {
           return false;
         }
@@ -260,6 +255,7 @@ export function RestaurantMenu() {
       }
     });
 
+  console.log(filteredDishes);
 
   // Modify the handleAddDish function to save the image to localStorage
   const handleAddDish = async () => {
@@ -282,6 +278,7 @@ export function RestaurantMenu() {
       const restaurantId = activeRestaurant.uid;
 
       // Log the category ID for debugging
+      console.log("Category ID:", newDish.category.id);
 
       // Calculate the next available order number
       const maxOrderNumber = dishes.reduce((max, category) => {
@@ -311,6 +308,7 @@ export function RestaurantMenu() {
       await uploadItemsToCategory(restaurantId, [newCategory]);
       loadData();
       setIsAddDialogOpen(false);
+      console.log(`Dish added successfully with order number: ${newOrderNumber}`);
     } catch (error) {
       console.error("Error adding dish:", error.message || error);
       alert("Failed to add the dish. Please try again.");
@@ -318,103 +316,86 @@ export function RestaurantMenu() {
   };
 
   // Modify the handleEditDish function to save the updated image to localStorage
-  console.log(editingDish, "editingDish");
-  console.log(filteredDishes, "dishes");
-  
   const handleEditDish = async () => {
-    const categoryId = editingDish?.id; // Ensure category_id is correct
-    const itemId = editingDish?.items[0]?.id; // Ensure item id is correct
-  
-    // Ensure both categoryId and itemId are correct
-    
-  
-    // Ensure path is correct, check if categoryId exists
-    const itemsRef = collection(db, `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`);
-    
+    console.log("Editing dish:", editingDish);
+    const categoryPath = `restaurants/${activeRestaurant?.uid}/categories/${editingDish?.category_id}`;
+    const itemPath = `restaurants/${activeRestaurant?.uid}/categories/${editingDish?.category_id}/items/${editingDish.id}`;
+    console.log(`Accessing category path: ${categoryPath}`);
+    console.log(`Accessing item path: ${itemPath}`);
+
     try {
+      // Step 1: Check if category exists
+      const categoryRef = doc(db, categoryPath);
+      const categorySnapshot = await getDoc(categoryRef);
+
+      if (!categorySnapshot.exists()) {
+        console.error("Category does not exist:", editingDish?.category_id);
+        return;
+      }
+
+      // Step 2: Get all items in the category
+      const itemsRef = collection(db, `restaurants/${activeRestaurant?.uid}/categories/${editingDish?.category_id}/items`);
       const itemsSnapshot = await getDocs(itemsRef);
-  
-      // Ensure itemsSnapshot contains documents
+
       if (itemsSnapshot.empty) {
         console.error("No items found in the category.");
         return;
       }
-  
-      let found = false;
-  
-      // Loop through each document and check for a match
-      for (const docSnap of itemsSnapshot.docs) {
-        const data = docSnap.data();
-  
-        // Ensure the correct comparison of IDs
-        if (data.id === itemId) {
-          const itemRef = doc(db, docSnap.ref.path);
-  
-          // Update item
-          await updateDoc(itemRef, {
-            name: editingDish?.items[0]?.name,
-            description: editingDish?.items[0]?.description,
-            price: editingDish?.items[0]?.price,
-            imageUrl: editingDish?.items[0]?.imageUrl,
-          });
-  
-          console.log(`Dish "${editingDish?.name}" updated successfully!`);
-          found = true;
-          loadData();
-          setIsEditDialogOpen(false);
-          break;  // Break the loop once the item is found and updated
-        }
-      }
-  
-      if (!found) {
-        console.warn("Dish not found with the given ID inside items collection.");
-      }
-  
-    } catch (error) {
-      console.error("Error while updating dish:", error);
-    }
-  };
-  
-  
-  
-  
-  
 
-  const handleDeleteDish = async (itemId: string, categoryId: string) => {
-    console.log("Deleting dish item:", itemId);
-    console.log("From category ID:", categoryId);
-  
-    const itemsPath = `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`;
-  
-    try {
-      const snapshot = await getDocs(collection(db, itemsPath));
-  
-      let found = false;
-  
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-  
-        if (data.id === itemId) {
-          const itemRef = doc(db, `${itemsPath}/${docSnap.id}`);
-          await deleteDoc(itemRef);
-          console.log(`✅ Dish item with ID ${itemId} deleted successfully.`);
-          found = true;
-          break;
-        }
-      }
-  
-      if (!found) {
-        console.warn(`⚠️ Dish item with ID ${itemId} not found in category ${categoryId}`);
-      }
-  
-      loadData(); // Refresh your UI or data
-  
+      // Step 3: Iterate over all items and update them
+      itemsSnapshot.forEach(async (itemDoc) => {
+        const itemRef = doc(db, itemDoc.ref.path);
+
+        // If you want to apply some updates to all items, you can do so here
+        await updateDoc(itemRef, {
+          name: editingDish.name,
+          description: editingDish.description,
+          price: editingDish.price,
+          imageUrl: editingDish.imageUrl,
+        });
+
+        console.log(`Updated item: ${itemDoc.id}`);
+      });
+      loadData();
+      setIsEditDialogOpen(false)
+
+      console.log("All items updated successfully!");
+
     } catch (error) {
-      console.error("🔥 Error deleting dish item:", error);
+      console.error("Error updating items in category:", error);
     }
   };
-  
-  
+
+
+  const handleDeleteDish = async (id: string, categoryId: string) => {
+    console.log("Deleting dish:", id);
+
+    // Define the path to the category
+    const categoryPath = `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`;
+
+    try {
+      // Step 1: Get all items in the category
+      const itemsSnapshot = await getDocs(collection(db, categoryPath));
+
+      let itemFound = false;  // Flag to track if item is found
+
+      // Step 2: Loop through items and find the one to delete
+      itemsSnapshot.forEach(async (docSnapshot) => {
+        const item = docSnapshot.data();
+        if (item.id === id) {
+          // Step 3: Delete the matching item
+          const itemRef = doc(db, `${categoryPath}/${docSnapshot.id}`);
+          await deleteDoc(itemRef);
+          console.log(`Item with id ${id} deleted successfully from Firestore!`);
+          itemFound = true;
+        }
+      });
+      loadData();
+
+    } catch (error) {
+      console.error("Error deleting item from Firestore:", error);
+    }
+  };
 
 
 
@@ -456,6 +437,7 @@ export function RestaurantMenu() {
         }))
         .filter((dish: any) => dish.restaurent === activeRestaurant) // 👈 Filter by active restaurant
 
+      // console.log("Filtered Dishes for Active Restaurant:", filteredDishes)
       setDishes(filteredDishes) // 👈 Sirf matching dishes state mein save karein
     } catch (error) {
       console.error("Error fetching dishes:", error)
@@ -496,9 +478,8 @@ export function RestaurantMenu() {
   }, [activeCategory])
 
   const handleCategorySelect = (category: string | null) => {
-    setSelectedCategory(category?.name)
-    setActiveCategory(category?.name)
-
+    setSelectedCategory(category)
+    setActiveCategory(category)
   }
   const handleCategorySelectForSideBaR = () => {
     setSelectedCategory(activeCategory)
@@ -512,6 +493,7 @@ export function RestaurantMenu() {
   }
   // Handle drag end event
   const handleDragEnd = async (result: DropResult) => {
+    console.log(result, "result");
     if (!result.destination) return; // Dropped outside the list
 
     const sourceIndex = result.source.index;
@@ -634,6 +616,7 @@ export function RestaurantMenu() {
     const data = await fetchCategoriesAndItems(activeRestaurant?.uid);
     const categoriesWithItems = data.filter(category => category.items.length > 0);
     setDishes(categoriesWithItems);
+    console.log("Categories with items:", categoriesWithItems);
   };
 
   return (
@@ -642,64 +625,195 @@ export function RestaurantMenu() {
       <SidebarInset>
         <TopNavbar onSearch={handleSearch} searchQuery={searchQuery} />
         <div className="flex min-h-screen flex-col">
+        
+        <header className="sticky top-0 z-10 border-b bg-background">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo and Restaurant Name */}
+            <div className="flex items-center">
+              <ChefHat className="h-6 w-6 mr-2 text-primary" />
+              <h1 className="text-xl font-semibold">{activeRestaurant?.name || "Restaurant Menu"}</h1>
 
-          <header className="sticky top-0 z-10 border-b bg-background">
-            <div className="container mx-auto px-4">
-              <div className="flex h-16 items-center justify-between">
-                {/* Logo and Restaurant Name */}
-                <div className="flex items-center">
-                  <ChefHat className="h-6 w-6 mr-2 text-primary" />
-                  <h1 className="text-xl font-semibold">{activeRestaurant?.name || "Restaurant Menu"}</h1>
+              {/* Developer Mode Toggle */}
+              <div className="flex items-center ml-4">
+                <Badge variant={userRole === "owner" ? "destructive" : "default"}>
+                  {userRole === "owner" ? "Owner" : "User"}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
+                  Switch Role
+                </Button>
+              </div>
+            </div>
 
-                  {/* Developer Mode Toggle */}
-                  <div className="flex items-center ml-4">
-                    <Badge variant={userRole === "owner" ? "destructive" : "default"}>
-                      {userRole === "owner" ? "Owner" : "User"}
-                    </Badge>
-                    <Button variant="ghost" size="sm" onClick={toggleUserRole} className="ml-2 text-xs">
-                      Switch Role
-                    </Button>
+            {/* Search Bar */}
+            <div className="hidden md:flex relative w-full max-w-sm mx-4">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search menu items..."
+                className="pl-8 w-full"
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+            </div>
+
+            {/* Filter and Sort Controls */}
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  <div className="px-2 py-1.5">
+                    <Label htmlFor="category-filter" className="text-xs">
+                      Category
+                    </Label>
+                    <Select
+                      value={selectedCategory || ""}
+                      onValueChange={(value) => handleCategorySelect(value || null)}
+                    >
+                      <SelectTrigger id="category-filter" className="mt-1 h-8">
+                        <SelectValue placeholder="All Categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All Items">All Items</SelectItem>
+                        {Array.isArray(categories) &&
+                          categories.length > 0 &&
+                          categories.map((category: any) => (
+                            <SelectItem key={category.id} value={category}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
 
-                {/* Search Bar */}
-                <div className="hidden md:flex relative w-full max-w-sm mx-4">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search menu items..."
-                    className="pl-8 w-full"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                  />
-                </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={clearFilters}>Clear Filters</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                {/* Filter and Sort Controls */}
-                <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 gap-1">
-                        <Filter className="h-4 w-4" />
-                        Filter
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {userRole === "owner" && (
+                    <DropdownMenuCheckboxItem
+                      checked={sortOrder === "custom"}
+                      onCheckedChange={() => setSortOrder("custom")}
+                    >
+                      Custom Order
+                    </DropdownMenuCheckboxItem>
+                  )}
+                  <DropdownMenuCheckboxItem
+                    checked={sortOrder === "name"}
+                    onCheckedChange={() => setSortOrder("name")}
+                  >
+                    Name (A-Z)
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={sortOrder === "price-asc"}
+                    onCheckedChange={() => setSortOrder("price-asc")}
+                  >
+                    Price (Low to High)
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={sortOrder === "price-desc"}
+                    onCheckedChange={() => setSortOrder("price-desc")}
+                  >
+                    Price (High to Low)
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                      <div className="px-2 py-1.5">
-                        <Label htmlFor="category-filter" className="text-xs">
-                          Category
-                        </Label>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                aria-label={viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
+              >
+                {viewMode === "grid" ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+              </Button>
+
+              {/* User Actions */}
+              {userRole !== "owner" && (
+                <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/cart")}>
+                  <ShoppingCart className="h-5 w-5" />
+                  {Object.keys(cart).length > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)}
+                    </Badge>
+                  )}
+                </Button>
+              )}
+
+              {/* Add Dish Button (Owner Only) */}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  {userRole === "owner" ? (
+                    <Button size="sm" className="h-8">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Dish
+                    </Button>
+                  ) : null}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Dish</DialogTitle>
+                    <DialogDescription>Fill in the details to add a new dish to the menu.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={newDish.name}
+                        onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={newDish.description}
+                        onChange={(e) => setNewDish({ ...newDish, description: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="price">Price ($)</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          value={newDish.price}
+                          onChange={(e) => setNewDish({ ...newDish, price: Number.parseFloat(e.target.value) })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="category">Category</Label>
                         <Select
-                          value={selectedCategory || ""}
-                          onValueChange={(value) => handleCategorySelect(value || null)}
+                          value={newDish.category}
+                          onValueChange={(value) => setNewDish({ ...newDish, category: value })}
                         >
-                          <SelectTrigger id="category-filter" className="mt-1 h-8">
-                            <SelectValue placeholder="All Categories" />
+                          <SelectTrigger id="category">
+                            <SelectValue placeholder="Select Category" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="All Items">All Items</SelectItem>
                             {Array.isArray(categories) &&
                               categories.length > 0 &&
                               categories.map((category: any) => (
@@ -707,182 +821,51 @@ export function RestaurantMenu() {
                                   {category.name}
                                 </SelectItem>
                               ))}
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={clearFilters}>Clear Filters</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 gap-1">
-                        <SlidersHorizontal className="h-4 w-4" />
-                        Sort
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {userRole === "owner" && (
-                        <DropdownMenuCheckboxItem
-                          checked={sortOrder === "custom"}
-                          onCheckedChange={() => setSortOrder("custom")}
-                        >
-                          Custom Order
-                        </DropdownMenuCheckboxItem>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="image">Image</Label>
+                      <Input type="file" id="image" accept="image/*" onChange={handleImageChange} />
+                      {newDish.image && (
+                        <img
+                          src={newDish.image || "/placeholder.svg"}
+                          alt="Preview"
+                          className="mt-2 h-20 w-20 rounded-md object-cover"
+                        />
                       )}
-                      <DropdownMenuCheckboxItem
-                        checked={sortOrder === "name"}
-                        onCheckedChange={() => setSortOrder("name")}
-                      >
-                        Name (A-Z)
-                      </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem
-                        checked={sortOrder === "price-asc"}
-                        onCheckedChange={() => setSortOrder("price-asc")}
-                      >
-                        Price (Low to High)
-                      </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem
-                        checked={sortOrder === "price-desc"}
-                        onCheckedChange={() => setSortOrder("price-desc")}
-                      >
-                        Price (High to Low)
-                      </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                    aria-label={viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
-                  >
-                    {viewMode === "grid" ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
-                  </Button>
-
-                  {/* User Actions */}
-                  {userRole !== "owner" && (
-                    <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/cart")}>
-                      <ShoppingCart className="h-5 w-5" />
-                      {Object.keys(cart).length > 0 && (
-                        <Badge
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                        >
-                          {Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)}
-                        </Badge>
-                      )}
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
                     </Button>
-                  )}
-
-                  {/* Add Dish Button (Owner Only) */}
-                  <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                    <DialogTrigger asChild>
-                      {userRole === "owner" ? (
-                        <Button size="sm" className="h-8">
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          Add Dish
-                        </Button>
-                      ) : null}
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add New Dish</DialogTitle>
-                        <DialogDescription>Fill in the details to add a new dish to the menu.</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="name">Name</Label>
-                          <Input
-                            id="name"
-                            value={newDish.name}
-                            onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="description">Description</Label>
-                          <Textarea
-                            id="description"
-                            value={newDish.description}
-                            onChange={(e) => setNewDish({ ...newDish, description: e.target.value })}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="price">Price ($)</Label>
-                            <Input
-                              id="price"
-                              type="number"
-                              step="0.01"
-                              value={newDish.price}
-                              onChange={(e) => setNewDish({ ...newDish, price: Number.parseFloat(e.target.value) })}
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="category">Category</Label>
-                            <Select
-                              value={newDish.category}
-                              onValueChange={(value) => setNewDish({ ...newDish, category: value })}
-                            >
-                              <SelectTrigger id="category">
-                                <SelectValue placeholder="Select Category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.isArray(categories) &&
-                                  categories.length > 0 &&
-                                  categories.map((category: any) => (
-                                    <SelectItem key={category.id} value={category}>
-                                      {category.name}
-                                    </SelectItem>
-                                  ))}
-                                <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="image">Image</Label>
-                          <Input type="file" id="image" accept="image/*" onChange={handleImageChange} />
-                          {newDish.image && (
-                            <img
-                              src={newDish.image || "/placeholder.svg"}
-                              alt="Preview"
-                              className="mt-2 h-20 w-20 rounded-md object-cover"
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddDish} disabled={bool}>
-                          Add Dish
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-
-              {/* Mobile Search - Only visible on small screens */}
-              <div className="md:hidden pb-3">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search menu items..."
-                    className="pl-8 w-full"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                  />
-                </div>
-              </div>
+                    <Button onClick={handleAddDish} disabled={bool}>
+                      Add Dish
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
-          </header>
+          </div>
+
+          {/* Mobile Search - Only visible on small screens */}
+          <div className="md:hidden pb-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search menu items..."
+                className="pl-8 w-full"
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+            </div>
+          </div>
+        </div>
+      </header>
           <main className="flex-1 p-6">
             {/* Active filters display */}
             {(searchQuery || selectedCategory || showVegetarian) && (
@@ -897,7 +880,7 @@ export function RestaurantMenu() {
                 )}
                 {selectedCategory && (
                   <Badge variant="secondary" className="flex items-center gap-1">
-                    Category: {selectedCategory.name}
+                    Category: {selectedCategory}
                     <button className="ml-1 rounded-full hover:bg-muted" onClick={() => setSelectedCategory(null)}>
                       ✕
                     </button>
@@ -945,40 +928,41 @@ export function RestaurantMenu() {
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                       >
-                        {filteredDishes.map((dish: any, index: number) => (
-                          <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`${snapshot.isDragging ? "opacity-70" : ""}`}
-                              >
-                                <div className="relative">
-                                  {/* Drag Handle */}
-                                  <div
-                                    {...provided.dragHandleProps}
-                                    className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
-                                  >
-                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                        {filteredDishes.map((category) => (
+                          category.items.map((dish: any, index: any) => (
+                            <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`${snapshot.isDragging ? "opacity-70" : ""}`}
+                                >
+                                  <div className="relative">
+                                    {/* Drag Handle */}
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
+                                    >
+                                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+
+                                    {/* Dish Card Component */}
+                                    <DishCard
+                                      dish={dish}
+                                      category={category.name}
+                                      onEdit={userRole === "owner" ? () => openEditDialog({ ...dish, category_id: category.id }) : undefined}
+                                      onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id, category.id) : undefined}
+                                      onAddToCart={userRole !== "owner" ? addToCart : undefined}
+                                      isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
+                                      userRole={userRole}
+                                      onClick={() => openDishDetail(dish)}
+                                    />
                                   </div>
-
-                                  {/* Dish Card */}
-                                  <DishCard
-                                    dish={dish}
-                                    category={dish.categoryName} // agar chahiye ho
-                                    onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
-                                    onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                                    isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                                    userRole={userRole}
-                                    onClick={() => openDishDetail(dish)}
-                                  />
                                 </div>
-                              </div>
-                            )}
-                          </Draggable>
+                              )}
+                            </Draggable>
+                          ))
                         ))}
-
 
 
                         {provided.placeholder}
@@ -991,10 +975,10 @@ export function RestaurantMenu() {
                   {filteredDishes.map((dish) => {
                     return (
                       <DishCard
+                        key={dish.id}
                         dish={dish}
-                        category={dish.name}
-                        onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                        onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
+                        onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
+                        onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
                         onAddToCart={userRole !== "owner" ? addToCart : undefined}
                         isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
                         userRole={userRole}
@@ -1025,11 +1009,10 @@ export function RestaurantMenu() {
                                   <GripVertical className="h-5 w-5 text-muted-foreground" />
                                 </div>
                                 <div className="pl-8">
-                                  <DishCard
+                                  <DishList
                                     dish={dish}
-                                    category={dish.name}
-                                    onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
+                                    onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
+                                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
                                     onAddToCart={userRole !== "owner" ? addToCart : undefined}
                                     isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
                                     userRole={userRole}
@@ -1049,11 +1032,11 @@ export function RestaurantMenu() {
             ) : (
               <div className="space-y-4">
                 {filteredDishes.map((dish) => (
-                  <DishCard
+                  <DishList
+                    key={dish.id}
                     dish={dish}
-                    category={dish.name}
-                    onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
+                    onEdit={userRole === "owner" ? () => openEditDialog(dish) : undefined}
+                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.id) : undefined}
                     onAddToCart={userRole !== "owner" ? addToCart : undefined}
                     isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
                     userRole={userRole}
@@ -1198,85 +1181,72 @@ export function RestaurantMenu() {
             <DialogDescription>Update the details of this dish.</DialogDescription>
           </DialogHeader>
           {editingDish && (
-  <div className="grid gap-4 py-4">
-    <div className="grid gap-2">
-      <Label htmlFor="edit-name">Name</Label>
-      <Input
-        id="edit-name"
-        value={editingDish?.items[0]?.name}
-        onChange={(e) => 
-          setEditingDish({
-            ...editingDish,  // Preserve the existing properties of editingDish
-            items: [
-              {
-                ...editingDish.items[0],  // Preserve the existing properties of the first item
-                name: e.target.value,  // Update only the name
-              },
-              ...editingDish.items.slice(1), // If you have more items, keep them intact
-            ],
-          })
-        }
-      />
-    </div>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editingDish.name}
+                  onChange={(e) => setEditingDish({ ...editingDish, name: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editingDish.description}
+                  onChange={(e) => setEditingDish({ ...editingDish, description: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-price">Price ($)</Label>
+                  <Input
+                    id="edit-price"
+                    type="number"
+                    step="0.01"
+                    value={editingDish.price}
+                    onChange={(e) => setEditingDish({ ...editingDish, price: Number.parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select
+                    value={editingDish.category}
+                    onValueChange={(value) => setEditingDish({ ...editingDish, category: value })}
+                  >
+                    <SelectTrigger id="edit-category">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.isArray(categories) &&
+                        categories.length > 0 &&
+                        categories.map((category: any) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
 
-    <div className="grid gap-2">
-      <Label htmlFor="edit-description">Description</Label>
-      <Textarea
-        id="edit-description"
-        value={editingDish?.items[0]?.description}
-        onChange={(e) =>
-          setEditingDish({
-            ...editingDish,  // Preserve the existing properties of editingDish
-            items: [
-              {
-                ...editingDish.items[0],  // Preserve the existing properties of the first item
-                description: e.target.value,  // Update only the description
-              },
-              ...editingDish.items.slice(1), // If you have more items, keep them intact
-            ],
-          })
-        }
-      />
-    </div>
+                      {/* Always keep "Other" at the end */}
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
 
-    <div className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="edit-price">Price ($)</Label>
-        <Input
-          id="edit-price"
-          type="number"
-          step="0.01"
-          value={editingDish?.items[0]?.price}
-          onChange={(e) =>
-            setEditingDish({
-              ...editingDish,  // Preserve the existing properties of editingDish
-              items: [
-                {
-                  ...editingDish.items[0],  // Preserve the existing properties of the first item
-                  price: Number.parseFloat(e.target.value),  // Update only the price
-                },
-                ...editingDish.items.slice(1), // If you have more items, keep them intact
-              ],
-            })
-          }
-        />
-      </div>
-    </div>
-
-    <div className="grid gap-2">
-      <Label htmlFor="edit-image">Image</Label>
-      <Input type="file" id="edit-image" accept="image/*" onChange={handleImageChange} />
-      {editingDish.items[0].image && (
-        <img
-          src={editingDish?.items[0].image || "/placeholder.svg"}
-          alt="Preview"
-          className="mt-2 h-20 w-20 rounded-md object-cover"
-        />
-      )}
-    </div>
-  </div>
-)}
-
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-image">Image</Label>
+                <Input type="file" id="edit-image" accept="image/*" onChange={handleImageChange} />
+                {editingDish.image && (
+                  <img
+                    src={editingDish.image || "/placeholder.svg"}
+                    alt="Preview"
+                    className="mt-2 h-20 w-20 rounded-md object-cover"
+                  />
+                )}
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
@@ -1296,20 +1266,20 @@ export function RestaurantMenu() {
               <DialogHeader>
                 <DialogTitle>{selectedDish.name}</DialogTitle>
                 <DialogDescription>
-                  {selectedDish?.items[0]?.name} - ${selectedDish?.items[0]?.price?.toFixed(2)}
+                  {selectedDish.category} - ${selectedDish.price.toFixed(2)}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="grid gap-4 py-4">
                 <div className="relative h-48 w-full overflow-hidden rounded-md">
                   <img
-                    src={selectedDish?.items[0]?.imageUrl || "/placeholder.svg"}
-                    alt={selectedDish?.items[0]?.name}
+                    src={selectedDish.image || "/placeholder.svg"}
+                    alt={selectedDish.name}
                     className="h-full w-full object-cover"
                   />
                 </div>
 
-                <p className="text-sm text-muted-foreground">{selectedDish?.items[0]?.description}</p>
+                <p className="text-sm text-muted-foreground">{selectedDish.description}</p>
 
                 <div className="border-t pt-4">
                   <h4 className="mb-2 font-medium">Rate this dish</h4>

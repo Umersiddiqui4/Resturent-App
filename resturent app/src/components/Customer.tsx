@@ -108,7 +108,6 @@ export default function Customer({
           ...doc.data()
         }));
 
-        console.log("Fetched Feedbacks:", feedbackList);
         setSelectedDish(feedbackList)
         return feedbackList;
 
@@ -118,7 +117,6 @@ export default function Customer({
     };
     fetchDishFeedback(storedFeedbackId);
   }, [storedFeedbackId]);
-  console.log(selectedDish, "selecteddish");
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 md:py-8 transition-colors duration-200 bg-background text-foreground">
