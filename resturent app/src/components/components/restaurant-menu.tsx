@@ -601,14 +601,32 @@ export function RestaurantMenu() {
   }, [activeRestaurant])
 
   useEffect(() => {
-    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
-    const storedRest = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
-    setActiveUser(storedOwners);
-    setActiveRestaurant(storedRest);
-    if (storedOwners && storedOwners.role) {
-      setUserRole(storedOwners.role);
+    try {
+      const storedOwnersRaw = localStorage.getItem("activeUser");
+      const storedRestRaw = localStorage.getItem("activeRestaurant");
+  
+      const storedOwners = storedOwnersRaw && storedOwnersRaw !== "undefined"
+        ? JSON.parse(storedOwnersRaw)
+        : {};
+  
+      const storedRest = storedRestRaw && storedRestRaw !== "undefined"
+        ? JSON.parse(storedRestRaw)
+        : {};
+  
+      setActiveUser(storedOwners);
+      setActiveRestaurant(storedRest);
+  
+      if (storedOwners?.role) {
+        setUserRole(storedOwners.role);
+      }
+    } catch (err) {
+      console.error("Error parsing localStorage:", err);
+      setActiveUser({ role: "", name: "", restaurantName: "", uid: "", email: "" });
+      setActiveRestaurant({createdAt: {}, email: "", name: "", owner_Id: "",
+        uid: ""});
     }
   }, []);
+  
 
   return (
     <SidebarProvider>

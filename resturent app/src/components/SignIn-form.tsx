@@ -93,10 +93,16 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   }, [activeUser])
 
   useEffect(() => {
-    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
-    setActiveUser(storedOwners);
+    try {
+      const raw = localStorage.getItem("activeUser");
+      const storedOwners = raw && raw !== "undefined" ? JSON.parse(raw) : {};
+      setActiveUser(storedOwners);
+    } catch (err) {
+      console.error("Failed to parse activeUser from localStorage:", err);
+      setActiveUser({ role: "", name: "", restaurantName: "", uid: "", email: "" });
+    }
   }, []);
-
+  
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
       <div className="w-full max-w-sm md:max-w-3xl">
