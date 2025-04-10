@@ -74,7 +74,7 @@ export function useDishes(restaurantId: string, categoryId?: string) {
       const dishesRef = collection(db, "restaurants", restaurantId, "categories", categoryId, "dishes")
 
       // Get the highest display order
-      const maxDisplayOrder = dishes.length > 0 ? Math.max(...dishes.map((d) => d.displayOrder)) : 0
+      const maxDisplayOrder = dishes.length > 0 ? Math.max(...dishes.map((d) => d.displayOrder ?? 0)) : 0
 
       const dishData = {
         ...newDish,

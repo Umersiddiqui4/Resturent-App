@@ -99,12 +99,6 @@ const initialDishes: Dish[] = [
   },
 ]
 
-type StoredCategory = {
-  id?: string
-  name?: string
-  iconKey?: keyof typeof iconOptions
-}
-
 const iconOptions = {
   Home,
   Pizza,
@@ -145,7 +139,7 @@ export function RestaurantMenu() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [cart, setCart] = useState<Record<string, { dish: any; quantity: number }>>({})
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<StoredCategory | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<any | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
@@ -462,8 +456,8 @@ export function RestaurantMenu() {
     if (!restaurantId) return
 
     try {
-      const categories: StoredCategory[] = await getCategoriesFromFirestore(restaurantId)
-      const loadedCategories = categories.map((cat) => ({
+      const categories: any = await getCategoriesFromFirestore(restaurantId)
+      const loadedCategories = categories.map((cat: any) => ({
         id: cat.id,
         name: cat.name,
         icon: iconOptions[cat.iconKey as keyof typeof iconOptions] || iconOptions["Other"],

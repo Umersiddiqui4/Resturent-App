@@ -57,6 +57,8 @@ export default function CustomerReviews() {
 
     if (savedId) {
       setStoredFeedbackId(savedId);
+      console.log(selectedDish, "selectedDish");
+      
     }
   }, []);
 
