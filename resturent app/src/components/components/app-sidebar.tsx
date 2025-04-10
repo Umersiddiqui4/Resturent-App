@@ -309,7 +309,6 @@ export function AppSidebar() {
   const handleOpenDialog = () => {
     setDialogOpen(true)
   }
-  console.log(allCategories, "allCategories");
 
   return (
     <Sidebar>

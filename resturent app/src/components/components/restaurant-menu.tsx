@@ -165,7 +165,6 @@ export function RestaurantMenu() {
   const { activeRestaurant, setActiveRestaurant } = useAppContext()
   const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0)
 
-  console.log(userRole, "userRole");
 
 
   useEffect(() => {
@@ -267,12 +266,10 @@ export function RestaurantMenu() {
     const categoriesWithItems: any = data.filter((category) => category.items.length > 0)
     setDishes(categoriesWithItems)
   }
-  console.log(dishes, "dishes")
 
   // Modify the handleAddDish function to save the image to localStorage
   const handleAddDish = async () => {
     if (!newDish.name.trim() || !newDish.price || !selectedCategory || !newDish.description.trim()) {
-      console.log(newDish, "newDish", selectedCategory, "selectedDish")
 
       alert("Please fill all required fields including sub-category!")
       return
@@ -294,7 +291,6 @@ export function RestaurantMenu() {
       }, 0)
 
       const newOrderNumber = maxOrderNumber + 1
-      console.log(selectedCategory, "selectedCategory");
 
       const newCategory: any = {
         category_id: selectedCategoryId, // Ensure this is set correctly
@@ -326,9 +322,6 @@ export function RestaurantMenu() {
       }
     }
   }
-  console.log(editingDish, "editingDish");
-  console.log(newDish, "newdish");
-  console.log(activeCategory, "activeCategory");
 
   const handleEditDish = async () => {
     const categoryId = editingDish?.categoryId // Ensure category_id is correct
@@ -380,8 +373,6 @@ export function RestaurantMenu() {
   }
 
   const handleDeleteDish = async (itemId: string, categoryId: string) => {
-    console.log("Deleting dish item:", itemId)
-    console.log("From category ID:", categoryId)
 
     const itemsPath = `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`
 
@@ -464,7 +455,6 @@ export function RestaurantMenu() {
       console.error("Error fetching dishes:", error)
     }
   }
-  console.log("Trying to add dish to category:", selectedCategory);
 
   const fetchCategories = async () => {
     const restaurantId: any = activeRestaurant?.uid
@@ -490,22 +480,17 @@ export function RestaurantMenu() {
     setActiveCategory("")
     fetchSubCategories()
   }, [activeRestaurant])
-  console.log(cart, "cart");
 
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
   }
-  console.log(selectedCategory, "selectedCategory");
 
   useEffect(() => {
     handleCategorySelectForSideBaR()
   }, [activeCategory])
-  console.log(selectedCategoryId, "selectedCategoryId");
 
   const handleCategorySelect = (category: any | null) => {
-    console.log(category, "categoryfunction")
-
     setSelectedCategoryId(category.id)
     setSelectedCategory(category.id)
     setActiveCategory(category.name)
@@ -563,7 +548,6 @@ export function RestaurantMenu() {
   useEffect(() => {
     localStorage.setItem("feedbackId", selectedDish?.id)
   }, [selectedDish])
-  console.log(activeUser, "activeUser")
 
   const saveRatingAndComment = async () => {
     if (selectedDish && rating) {
@@ -629,9 +613,6 @@ export function RestaurantMenu() {
       loadData()
     }
   }, [activeRestaurant])
-
-
-  console.log(selectedCategory, "selectedCategory")
 
   return (
     <SidebarProvider>

@@ -27,7 +27,6 @@ const fetchCategoriesAndItems = async (restaurantId: string) => {
         };
       })
     );
-    console.log("Fetched categories and items: ", categories);
     return categories;
   } catch (error) {
     console.error("Error fetching categories and items: ", error);

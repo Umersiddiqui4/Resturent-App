@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils"
 export function DishCard({
   dish,
 }: any) {
-  console.log(dish, "dishcard");
 
   return (
     <Card className="overflow-hidden mb-4">
