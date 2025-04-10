@@ -35,7 +35,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
     restaurantName: "",
     role: accountType
   })
-  const { setActiveUser } = useAppContext();
+  const { activeUser, setActiveUser } = useAppContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -78,6 +78,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
 
       if (userDoc.exists()) {
         setActiveUser(userDoc.data());
+        localStorage.setItem("activeRestaurant", JSON.stringify(activeUser));
         setSnackbar({ open: true, message: "Registration successful! Redirecting...", severity: "success" });
 
         setTimeout(() => {

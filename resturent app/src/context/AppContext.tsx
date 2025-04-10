@@ -1,10 +1,10 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { User, Restaurent } from "../components/comp-manager/types"; 
+import { User, Restaurent } from "../components/comp-manager/types";
 
 interface AppContextType {
   activeUser: User | null;
   setActiveUser: (user: User | null) => void;
-  activeCategory: string | null;
+  activeCategory: any | null;
   setActiveCategory: (category: string | null) => void;
   activeRestaurant: Restaurent | null;
   setActiveRestaurant: (restaurant: Restaurent | null) => void;
@@ -21,11 +21,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [owners, setOwners] = useState<User[]>([]);
 
   return (
-    <AppContext.Provider value={{ 
-      activeUser, setActiveUser, 
-      activeCategory, setActiveCategory, 
-      activeRestaurant, setActiveRestaurant, 
-      owners, setOwners 
+    <AppContext.Provider value={{
+      activeUser, setActiveUser,
+      activeCategory, setActiveCategory,
+      activeRestaurant, setActiveRestaurant,
+      owners, setOwners
     }}>
       {children}
     </AppContext.Provider>

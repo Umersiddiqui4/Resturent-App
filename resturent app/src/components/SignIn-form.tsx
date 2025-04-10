@@ -16,14 +16,13 @@ import { doc, getDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { User } from "../components/comp-manager/types"
 
-
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
 }
 
 export default function SignIn({ className, ...props }: React.ComponentProps<"div">) {
   const { activeUser, setActiveUser } = useAppContext();
-  const { activeRestaurant, setActiveRestaurant } = useAppContext();
+  const { setActiveRestaurant } = useAppContext();
   const navigate = useNavigate();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -89,6 +88,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
 
         navigate("/dashboard")
       } else if (activeUser?.role === "user") {
+        localStorage.setItem("activeRestaurant", JSON.stringify(activeUser));
         navigate("/restaurent-selection")
       }
     } else {

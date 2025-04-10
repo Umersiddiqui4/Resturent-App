@@ -4,7 +4,6 @@ import { Edit, Trash } from "lucide-react"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "./ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import type { DishCardProps } from "../comp-manager/types"
 import { cn } from "@/lib/utils"
 import { useAppContext } from "@/context/AppContext"
 
@@ -16,17 +15,17 @@ export function DishCard({
   isInCart = 0,
   onClick,
   category
-}: DishCardProps) {
+}: any) {
   const { activeUser } = useAppContext();
   const { activeRestaurant } = useAppContext()
-  
+
   return (
     <Card className="overflow-hidden ">
       <CardHeader className="p-0">
         <div className="relative sm:h-48 h-80 w-full">
           <img
-            src={dish.items[0].imageUrl || "/placeholder.svg"}
-            alt={dish.items[0].name}
+            src={dish.imageUrl || "/placeholder.svg"}
+            alt={dish.name}
             className="absolute inset-0 h-full w-full object-cover"
           />
           {onEdit && onDelete && (
@@ -73,7 +72,7 @@ export function DishCard({
                 className="bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onAddToCart(dish.items[0].id)
+                  onAddToCart(dish)
                 }}
               >
                 {isInCart ? "Add Another" : "Add to Cart"}
@@ -92,16 +91,16 @@ export function DishCard({
       >
         <div className="mb-2 flex items-center justify-between">
           <h3 className="font-semibold">
-            {dish?.items[0]?.name?.charAt(0).toUpperCase() + dish?.items[0]?.name?.slice(1)}
+            {dish?.name?.charAt(0).toUpperCase() + dish?.name?.slice(1)}
           </h3>
-          <span className="font-medium text-primary">${dish?.items[0]?.price?.toFixed(2)}</span>
+          <span className="font-medium text-primary">${dish?.price?.toFixed(2)}</span>
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2">{dish.items[0].description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{dish.description}</p>
       </CardContent>
       <CardFooter className="border-t p-4 pt-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            {dish.name}
-          </span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {(category ?? "").charAt(0).toUpperCase() + (category ?? "").slice(1)}
+        </span>
       </CardFooter>
     </Card>
   )

@@ -56,11 +56,9 @@ import FormControl from "@mui/material/FormControl"
 import InputLabel from "@mui/material/InputLabel"
 import Select from "@mui/material/Select"
 import MenuItem from "@mui/material/MenuItem"
-import type { User } from "../comp-manager/types"
-import { getCategoriesFromFirestore, uploadCategoriesToFirestore, useRestaurants } from "../api/useRestaurants"
+import { getCategoriesFromFirestore, useRestaurants } from "../api/useRestaurants"
 import ListSkeleton from "../comp-manager/list_skeleton"
-import fetchCategoriesAndItems from "../api/categoreis&item"
-import {createCategory, uploadItemsToCategory} from "../api/categoriesUpload"
+import { createCategory } from "../api/categoriesUpload"
 
 // Define all available icons
 const iconOptions = {
@@ -83,7 +81,6 @@ const iconOptions = {
   Breakfast: Egg,
   Bakery: Croissant,
 }
-
 // Icon mapping for automatic selection
 const iconKeywords = {
   pizza: Pizza,
@@ -136,19 +133,26 @@ const categories = [
   // { name: "Other", icon: ListFilter },
 ]
 
-// Type for storing category data
 type StoredCategory = {
-  id?: string
-  name?: string
-  iconKey?: keyof typeof iconOptions
+  id?: string;
+  name: string;
+  icon: keyof typeof iconOptions;
+  iconKey: keyof typeof iconOptions;
+  category_id: string;
 }
+
+type Category = {
+  id?: string;              // Unique identifier for the category
+  name: string;             // Category ka naam
+  icon: keyof typeof iconOptions;  // Category ka icon key
+  category_id: string;      // Category ka restaurant id
+};
 
 export function AppSidebar() {
   const { activeCategory, setActiveCategory } = useAppContext()
   const { activeUser } = useAppContext()
   const { owners } = useAppContext()
   const { activeRestaurant, setActiveRestaurant } = useAppContext()
-  const [restaurants] = useState<User[]>()
   const [customCategories, setCustomCategories] = useState<Array<{ name?: string; icon?: any }>>([])
   const [newCategoryName, setNewCategoryName] = useState("")
   const [selectedIcon, setSelectedIcon] = useState<keyof typeof iconOptions>("Other")
@@ -161,16 +165,20 @@ export function AppSidebar() {
     if (!restaurantId) return;
 
     try {
-      const categories: StoredCategory[] = await getCategoriesFromFirestore(restaurantId);
-      const loadedCategories = categories.map((cat) => ({
-        name: cat.name,
-        icon: iconOptions[cat.iconKey as keyof typeof iconOptions] || iconOptions["Other"]
+      const categories: any = await getCategoriesFromFirestore(restaurantId);
+      const loadedCategories: Category[] = categories.map((cat: any) => ({
+        id: cat.id || "",
+        name: cat.name || "Unnamed Category",
+        icon: cat.iconKey || "Other", // 👈 use iconKey for UI rendering
+        iconKey: cat.iconKey || "Other",
+        category_id: cat.category_id || restaurantId,
       }));
       setCustomCategories(loadedCategories);
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
   };
+
 
   useEffect(() => {
     fetchCategories();
@@ -263,47 +271,45 @@ export function AppSidebar() {
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
-      const newCategory = {
-        name: newCategoryName.trim(),
-        icon: iconOptions[selectedIcon], 
-      }
-
-      const updatedCategories = [newCategory]
-      setCustomCategories(updatedCategories)
-
       const restaurantId: any = activeRestaurant?.uid;
 
-      const categoriesToStore: StoredCategory[] = updatedCategories.map((cat) => {
-        const iconKey =
-          (Object.entries(iconOptions).find(([_, icon]) => icon === cat.icon)?.[0] as keyof typeof iconOptions) ||
-          "Other"
+      const newCategory = {
+        name: newCategoryName.trim(),
+        icon: iconOptions[selectedIcon],  // icon component for UI
+        iconKey: selectedIcon,            // icon name (string) for Firestore
+        category_id: restaurantId,
+      };
 
-        return {
-          name: cat.name,
-          iconKey: iconKey,
-          category_id: restaurantId
-        }
-      })
-      // uploadCategoriesToFirestore(restaurantId, categoriesToStore);
-     
-      createCategory(restaurantId,categoriesToStore);
+      const updatedCategories = [newCategory];
+      setCustomCategories(updatedCategories);
 
-      setNewCategoryName("")
-      setSelectedIcon("Other") 
-      setDialogOpen(false)
-      fetchCategories();
+      const categoriesToStore: StoredCategory[] = updatedCategories.map((cat) => ({
+        name: cat.name || "",
+        icon: cat.iconKey as keyof typeof iconOptions,    // For display (not required)
+        iconKey: cat.iconKey as keyof typeof iconOptions, // 👈 Required for Firestore
+        category_id: cat.category_id || restaurantId,
+      }));
+
+      createCategory(restaurantId, categoriesToStore); // Firestore mein bhejna
+
+      setNewCategoryName("");
+      setSelectedIcon("Other");
+      setDialogOpen(false);
+      fetchCategories(); // Refetch after add
     }
-  }
+  };
+
 
   const handleCloseDialog = () => {
     setDialogOpen(false)
     setNewCategoryName("")
-    setSelectedIcon("Other") 
+    setSelectedIcon("Other")
   }
 
   const handleOpenDialog = () => {
     setDialogOpen(true)
   }
+  console.log(allCategories, "allCategories");
 
   return (
     <Sidebar>
@@ -327,8 +333,8 @@ export function AppSidebar() {
                   Select Restaurant
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {restaurants?.length ? (
-                  restaurants.map((restaurant) => (
+                {owners?.length ? (
+                  owners.map((restaurant) => (
                     <DropdownMenuItem
                       key={restaurant.name}
                       className={cn(
@@ -368,22 +374,30 @@ export function AppSidebar() {
             )}
           </div>
           <SidebarMenu>
-            {allCategories.map((category: any) => (
-              <SidebarMenuItem key={category.name}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={category.name === activeCategory}
-                  onClick={() => setActiveCategory(category.name === "All Items" ? null : category.name)}
+            {allCategories.map((category: any) => {
+              const iconKey = category.icon as keyof typeof iconOptions;
+              const IconComponent = iconOptions[iconKey] || iconOptions["Other"];
 
-                >
-                  <a href="#" className={cn("flex items-center")}>
-                    {category.icon && <category.icon className="mr-2 h-4 w-4" />}
-                    <span>{category.name}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+              return (
+                <SidebarMenuItem key={category.name}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={category.name === activeCategory}
+                    onClick={() =>
+                      setActiveCategory(category.name === "All Items" ? null : category.name)
+                    }
+                  >
+                    <a href="#" className={cn("flex items-center")}>
+                      <IconComponent className="mr-2 h-4 w-4" />
+                      <span>{category.name}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
+
+
         </SidebarGroup>
         {/* Special Offers Section */}
         <SidebarGroup>

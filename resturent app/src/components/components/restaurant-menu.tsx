@@ -1,7 +1,8 @@
 "use client"
 
+import { DialogTrigger } from "../components/ui/dialog"
 import { DropdownMenuTrigger } from "../components/ui/dropdown-menu"
-import { collection, addDoc, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, getDoc } from "firebase/firestore"
+import { collection, addDoc, serverTimestamp, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore"
 import { db } from "../../firebase/firebaseConfig"
 import type React from "react"
 import { useState, useEffect } from "react"
@@ -26,22 +27,15 @@ import {
   Croissant,
   Egg,
   ShoppingCart,
-
 } from "lucide-react"
+
+import "../../index.css"
 
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Textarea } from "./ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +46,6 @@ import {
 } from "./ui/dropdown-menu"
 import { AppSidebar } from "./app-sidebar"
 import { DishCard } from "./dish-card"
-import { DishList } from "./dish-list"
 import { SidebarInset, SidebarProvider } from "./ui/sidebar"
 import { TopNavbar } from "../comp-manager/top-navbar"
 import type { Dish } from "../comp-manager/types"
@@ -65,9 +58,8 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabaseClient"
 import { getCategoriesFromFirestore } from "../api/useRestaurants"
 import fetchCategoriesAndItems from "../api/categoreis&item"
-import { log } from "console"
-import { uploadItemsToCategory, createCategory } from "../api/categoriesUpload"
-import { Description } from "@radix-ui/react-dialog"
+import { uploadItemsToCategory } from "../api/categoriesUpload"
+import { CelebrationDialog } from "./ui/celebration"
 
 // Sample dish data
 const initialDishes: Dish[] = [
@@ -137,8 +129,8 @@ const iconOptions = {
 export function RestaurantMenu() {
   const [dishes, setDishes] = useState<Dish[]>(initialDishes)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [subCategories, setSubCategories] = useState([])
-  const [newDish, setNewDish] = useState({
+  const [setSubCategories] = useState<any>([])
+  const [newDish, setNewDish] = useState<any>({
     name: "",
     description: "",
     price: 0,
@@ -148,12 +140,13 @@ export function RestaurantMenu() {
     createdAt: "",
   })
 
-  const [editingDish, setEditingDish] = useState<Dish | null>(null)
+  const [editingDish, setEditingDish] = useState<any | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [cart, setCart] = useState<Record<number, number>>({ 23: 23 })
+  const [cart, setCart] = useState<Record<string, { dish: any; quantity: number }>>({})
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<StoredCategory | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<"name" | "price-asc" | "price-desc" | "custom">("custom")
   const [showVegetarian, setShowVegetarian] = useState(false)
   const [userRole, setUserRole] = useState<"owner" | "user" | undefined>("user")
@@ -165,22 +158,26 @@ export function RestaurantMenu() {
   const [bool, setBool] = useState(false)
   const [categories, setCategories] = useState<any>("")
   const [dishRatings] = useState<Record<number, { rating: number; comment: string }>>({})
+  const [showCelebration, setShowCelebration] = useState(false)
 
   const { activeUser, setActiveUser } = useAppContext()
   const { activeCategory, setActiveCategory } = useAppContext()
   const { activeRestaurant, setActiveRestaurant } = useAppContext()
+  const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0)
 
-  const getUserRole = (activeUser: { name?: string }) => {
-    return activeUser?.name ? "owner" : "user"
-  }
+  console.log(userRole, "userRole");
+
 
   useEffect(() => {
-    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}")
-    const storedrest = JSON.parse(localStorage.getItem("activeRestaurant") || "{}")
-    setActiveUser(storedOwners)
-    setActiveRestaurant(storedrest)
-    setUserRole(getUserRole(storedOwners))
-  }, [])
+    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+    const storedRest = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
+    setActiveUser(storedOwners);
+    setActiveRestaurant(storedRest);
+    if (storedOwners && storedOwners.role) {
+      setUserRole(storedOwners.role);
+    }
+  }, []);
+
 
   const fetchSubCategories = async () => {
     if (!activeRestaurant?.uid || !newDish.category?.id) return
@@ -206,10 +203,9 @@ export function RestaurantMenu() {
     })
   }
 
-  // Sort dishes by display order when in custom sort mode
   useEffect(() => {
     if (sortOrder === "custom") {
-      setDishes((prev) => [...prev].sort((a, b) => a.displayOrder - b.displayOrder))
+      setDishes((prev) => [...prev].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)))
     }
   }, [sortOrder])
 
@@ -219,80 +215,89 @@ export function RestaurantMenu() {
     .filter((dish) => {
       // Ensure items exist
       if (!dish.items || dish.items.length === 0) {
-        return false;
+        return false
       }
 
       // Search query filter
       if (searchQuery) {
-        const searchLower = searchQuery.toLowerCase();
+        const searchLower = searchQuery.toLowerCase()
 
         // Check if **ANY** item inside `dish.items` matches the search
         const itemMatch = dish.items.some(
-          (item) =>
+          (item: any) =>
             item.name.toLowerCase().includes(searchLower) ||
-            (item.description && item.description.toLowerCase().includes(searchLower))
-        );
+            (item.description && item.description.toLowerCase().includes(searchLower)),
+        )
 
         if (!itemMatch) {
-          return false;
+          return false
         }
       }
 
       // Category filter
       if (selectedCategory && selectedCategory.name !== "All Items") {
         if (dish.name !== selectedCategory) {
-          return false;
+          return false
         }
       }
 
-      return true;
+      return true
     })
     .sort((a, b) => {
       if (sortOrder === "name") {
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name)
       } else if (sortOrder === "price-asc") {
-        return a.items[0].price - b.items[0].price; // Sorting by first item's price
+        return a.items[0].price - b.items[0].price // Sorting by first item's price
       } else if (sortOrder === "price-desc") {
-        return b.items[0].price - a.items[0].price;
+        return b.items[0].price - a.items[0].price
       } else {
-        // Custom order (by displayOrder)
-        return a.displayOrder - b.displayOrder;
+        // Custom order (by displayOrder), handle undefined with a default value
+        const aDisplayOrder = a.displayOrder ?? Number.MAX_SAFE_INTEGER // Use a large value for undefined
+        const bDisplayOrder = b.displayOrder ?? Number.MAX_SAFE_INTEGER // Use a large value for undefined
+        return aDisplayOrder - bDisplayOrder
       }
-    });
+    })
 
+  const loadData = async () => {
+    if (!activeRestaurant?.uid) {
+      console.error("No active restaurant or UID available.")
+      return
+    }
+    const data = await fetchCategoriesAndItems(activeRestaurant.uid)
+    const categoriesWithItems: any = data.filter((category) => category.items.length > 0)
+    setDishes(categoriesWithItems)
+  }
+  console.log(dishes, "dishes")
 
   // Modify the handleAddDish function to save the image to localStorage
   const handleAddDish = async () => {
-    if (
-      !newDish.name.trim() ||
-      !newDish.price ||
-      !newDish.category.id?.trim() || // Ensure category ID is provided
-      !newDish.description.trim()
-    ) {
-      alert("Please fill all required fields including sub-category!");
-      return;
+    if (!newDish.name.trim() || !newDish.price || !selectedCategory || !newDish.description.trim()) {
+      console.log(newDish, "newDish", selectedCategory, "selectedDish")
+
+      alert("Please fill all required fields including sub-category!")
+      return
     }
 
     if (!activeRestaurant?.uid) {
-      alert("No active restaurant selected!");
-      return;
+      alert("No active restaurant selected!")
+      return
     }
-
     try {
-      const restaurantId = activeRestaurant.uid;
+      const restaurantId = activeRestaurant.uid
 
-      // Log the category ID for debugging
-
-      // Calculate the next available order number
       const maxOrderNumber = dishes.reduce((max, category) => {
-        const categoryMax = category.items.reduce((itemMax, item) => Math.max(itemMax, item.displayOrder || 0), 0);
-        return Math.max(max, categoryMax);
-      }, 0);
+        const categoryMax = category.items.reduce(
+          (itemMax: any, item: any) => Math.max(itemMax, item.displayOrder || 0),
+          0,
+        )
+        return Math.max(max, categoryMax)
+      }, 0)
 
-      const newOrderNumber = maxOrderNumber + 1;
+      const newOrderNumber = maxOrderNumber + 1
+      console.log(selectedCategory, "selectedCategory");
 
-      const newCategory = {
-        category_id: newDish.category.id, // Ensure this is set correctly
+      const newCategory: any = {
+        category_id: selectedCategoryId, // Ensure this is set correctly
         name: newDish.category.name,
         items: [
           {
@@ -305,118 +310,107 @@ export function RestaurantMenu() {
             createdAt: serverTimestamp(),
           },
         ],
-      };
-
+      }
       // Pass the category to the upload function
-      await uploadItemsToCategory(restaurantId, [newCategory]);
-      loadData();
-      setIsAddDialogOpen(false);
-    } catch (error) {
-      console.error("Error adding dish:", error.message || error);
-      alert("Failed to add the dish. Please try again.");
-    }
-  };
+      await uploadItemsToCategory(restaurantId, [newCategory])
+      loadData()
+      setSelectedCategory(null)
+      setIsAddDialogOpen(false)
 
-  // Modify the handleEditDish function to save the updated image to localStorage
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error message: ", error.message)
+        console.error("Error stack: ", error.stack)
+      } else {
+        console.error("An unknown error occurred")
+      }
+    }
+  }
   console.log(editingDish, "editingDish");
-  console.log(filteredDishes, "dishes");
-  
+  console.log(newDish, "newdish");
+  console.log(activeCategory, "activeCategory");
+
   const handleEditDish = async () => {
-    const categoryId = editingDish?.id; // Ensure category_id is correct
-    const itemId = editingDish?.items[0]?.id; // Ensure item id is correct
-  
-    // Ensure both categoryId and itemId are correct
-    
-  
-    // Ensure path is correct, check if categoryId exists
-    const itemsRef = collection(db, `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`);
-    
+    const categoryId = editingDish?.categoryId // Ensure category_id is correct
+    const itemId = editingDish?.id // Ensure item id is correct
+
+    const itemsRef = collection(db, `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`)
+
     try {
-      const itemsSnapshot = await getDocs(itemsRef);
-  
+      const itemsSnapshot = await getDocs(itemsRef)
+
       // Ensure itemsSnapshot contains documents
       if (itemsSnapshot.empty) {
-        console.error("No items found in the category.");
-        return;
+        console.error("No items found in the category.")
+        return
       }
-  
-      let found = false;
-  
+
+      let found = false
+
       // Loop through each document and check for a match
       for (const docSnap of itemsSnapshot.docs) {
-        const data = docSnap.data();
-  
+        const data = docSnap.data()
+
         // Ensure the correct comparison of IDs
         if (data.id === itemId) {
-          const itemRef = doc(db, docSnap.ref.path);
-  
+          const itemRef = doc(db, docSnap.ref.path)
+
           // Update item
           await updateDoc(itemRef, {
-            name: editingDish?.items[0]?.name,
-            description: editingDish?.items[0]?.description,
-            price: editingDish?.items[0]?.price,
-            imageUrl: editingDish?.items[0]?.imageUrl,
-          });
-  
-          console.log(`Dish "${editingDish?.name}" updated successfully!`);
-          found = true;
-          loadData();
-          setIsEditDialogOpen(false);
-          break;  // Break the loop once the item is found and updated
+            name: editingDish?.name,
+            description: editingDish?.description,
+            price: editingDish?.price,
+            imageUrl: editingDish?.imageUrl,
+          })
+
+          console.log(`Dish "${editingDish?.name}" updated successfully!`)
+          found = true
+          loadData()
+          setIsEditDialogOpen(false)
+          break // Break the loop once the item is found and updated
         }
       }
-  
+
       if (!found) {
-        console.warn("Dish not found with the given ID inside items collection.");
+        console.warn("Dish not found with the given ID inside items collection.")
       }
-  
     } catch (error) {
-      console.error("Error while updating dish:", error);
+      console.error("Error while updating dish:", error)
     }
-  };
-  
-  
-  
-  
-  
+  }
 
   const handleDeleteDish = async (itemId: string, categoryId: string) => {
-    console.log("Deleting dish item:", itemId);
-    console.log("From category ID:", categoryId);
-  
-    const itemsPath = `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`;
-  
+    console.log("Deleting dish item:", itemId)
+    console.log("From category ID:", categoryId)
+
+    const itemsPath = `restaurants/${activeRestaurant?.uid}/categories/${categoryId}/items`
+
     try {
-      const snapshot = await getDocs(collection(db, itemsPath));
-  
-      let found = false;
-  
+      const snapshot = await getDocs(collection(db, itemsPath))
+
+      let found = false
+
       for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-  
+        const data = docSnap.data()
+
         if (data.id === itemId) {
-          const itemRef = doc(db, `${itemsPath}/${docSnap.id}`);
-          await deleteDoc(itemRef);
-          console.log(`✅ Dish item with ID ${itemId} deleted successfully.`);
-          found = true;
-          break;
+          const itemRef = doc(db, `${itemsPath}/${docSnap.id}`)
+          await deleteDoc(itemRef)
+          console.log(`✅ Dish item with ID ${itemId} deleted successfully.`)
+          found = true
+          break
         }
       }
-  
+
       if (!found) {
-        console.warn(`⚠️ Dish item with ID ${itemId} not found in category ${categoryId}`);
+        console.warn(`⚠️ Dish item with ID ${itemId} not found in category ${categoryId}`)
       }
-  
-      loadData(); // Refresh your UI or data
-  
+
+      loadData() // Refresh your UI or data
     } catch (error) {
-      console.error("🔥 Error deleting dish item:", error);
+      console.error("🔥 Error deleting dish item:", error)
     }
-  };
-  
-  
-
-
+  }
 
   const openEditDialog = (dish: Dish) => {
     setEditingDish(dish)
@@ -424,18 +418,27 @@ export function RestaurantMenu() {
   }
 
   // Remove toggleWishlist function
-  const addToCart = (dishId: number) => {
-    setCart((prev) => ({
-      ...prev,
-      [dishId]: (prev[dishId] || 0) + 1,
-    }))
+  const addToCart = (dish: any) => {
+    setCart((prev) => {
+      const dishId = dish.id.toString()
+      return {
+        ...prev,
+        [dishId]: {
+          dish,
+          quantity: prev[dishId] ? prev[dishId].quantity + 1 : 1,
+        },
+      }
+    })
   }
 
-  const removeFromCart = (dishId: number) => {
+  const removeFromCart = (dishId: string) => {
     setCart((prev) => {
       const newCart = { ...prev }
-      if (newCart[dishId] > 1) {
-        newCart[dishId] -= 1
+      if (newCart[dishId] && newCart[dishId].quantity > 1) {
+        newCart[dishId] = {
+          ...newCart[dishId],
+          quantity: newCart[dishId].quantity - 1,
+        }
       } else {
         delete newCart[dishId]
       }
@@ -461,6 +464,7 @@ export function RestaurantMenu() {
       console.error("Error fetching dishes:", error)
     }
   }
+  console.log("Trying to add dish to category:", selectedCategory);
 
   const fetchCategories = async () => {
     const restaurantId: any = activeRestaurant?.uid
@@ -486,19 +490,25 @@ export function RestaurantMenu() {
     setActiveCategory("")
     fetchSubCategories()
   }, [activeRestaurant])
+  console.log(cart, "cart");
+
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
   }
+  console.log(selectedCategory, "selectedCategory");
 
   useEffect(() => {
     handleCategorySelectForSideBaR()
   }, [activeCategory])
+  console.log(selectedCategoryId, "selectedCategoryId");
 
-  const handleCategorySelect = (category: string | null) => {
-    setSelectedCategory(category?.name)
-    setActiveCategory(category?.name)
+  const handleCategorySelect = (category: any | null) => {
+    console.log(category, "categoryfunction")
 
+    setSelectedCategoryId(category.id)
+    setSelectedCategory(category.id)
+    setActiveCategory(category.name)
   }
   const handleCategorySelectForSideBaR = () => {
     setSelectedCategory(activeCategory)
@@ -512,42 +522,36 @@ export function RestaurantMenu() {
   }
   // Handle drag end event
   const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return; // Dropped outside the list
+    if (!result.destination) return // Dropped outside the list
 
-    const sourceIndex = result.source.index;
-    const destinationIndex = result.destination.index;
+    const sourceIndex = result.source.index
+    const destinationIndex = result.destination.index
 
-    if (sourceIndex === destinationIndex) return;
+    if (sourceIndex === destinationIndex) return
 
     // Create a deep copy of the filtered dishes to avoid direct state mutation
-    const reorderedCategories = JSON.parse(JSON.stringify(filteredDishes));
+    const reorderedCategories = JSON.parse(JSON.stringify(filteredDishes))
 
-    // Since we're mapping over category.items in the UI, we need to find which category and item was moved
-    // For simplicity, let's assume we're working with the first category's items
     if (reorderedCategories.length > 0 && reorderedCategories[0].items) {
-      const firstCategory = reorderedCategories[0];
-      const [removedItem] = firstCategory.items.splice(sourceIndex, 1);
-      firstCategory.items.splice(destinationIndex, 0, removedItem);
+      const firstCategory = reorderedCategories[0]
+      const [removedItem] = firstCategory.items.splice(sourceIndex, 1)
+      firstCategory.items.splice(destinationIndex, 0, removedItem)
 
       // Update display order for all items
-      firstCategory.items.forEach((item, index) => {
-        item.displayOrder = index + 1;
-      });
+      firstCategory.items.forEach((item: any, index: any) => {
+        item.displayOrder = index + 1
+      })
 
-      // Update the state with the reordered categories
-      setDishes(prevDishes => {
-        // Find and update the modified category
-        return prevDishes.map(category => {
+      setDishes((prevDishes) => {
+        return prevDishes.map((category) => {
           if (category.id === firstCategory.id) {
-            return firstCategory;
+            return firstCategory
           }
-          return category;
-        });
-      });
-
-      // Firebase update code...
+          return category
+        })
+      })
     }
-  };
+  }
 
   const openDishDetail = (dish: Dish) => {
     setSelectedDish(dish)
@@ -557,25 +561,26 @@ export function RestaurantMenu() {
   }
 
   useEffect(() => {
-    localStorage.setItem("feedbackId", JSON.stringify(selectedDish?.id))
+    localStorage.setItem("feedbackId", selectedDish?.id)
   }, [selectedDish])
+  console.log(activeUser, "activeUser")
 
   const saveRatingAndComment = async () => {
     if (selectedDish && rating) {
       try {
-        const feedbackRef = collection(db, "dishFeedback", selectedDish.id, "comments") // ✅ Subcollection 'comments'
+        const feedbackRef = collection(db, "dishFeedback", selectedDish.id, "comments")
 
         const newFeedback = {
           rating,
           comment,
           user: activeUser || "anonymous",
           createdAt: serverTimestamp(),
-          selectedDish,
+          dishId: selectedDish, // 👍 better than saving the whole object
         }
 
-        await addDoc(feedbackRef, newFeedback) // ✅ Each comment will be a new document
+        await addDoc(feedbackRef, newFeedback)
         console.log("Feedback saved successfully!")
-        setIsDetailModalOpen(!isDetailModalOpen)
+        setIsDetailModalOpen(false)
         setComment("")
         setRating(0)
       } catch (error) {
@@ -588,16 +593,12 @@ export function RestaurantMenu() {
     const fileExt = file.name.split(".").pop()
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `images/${fileName}`
-
     const { error } = await supabase.storage.from("restaurant-images").upload(filePath, file)
-
     if (error) {
       console.error("Error uploading image:", error)
       return null
     }
-
     const { data: publicUrlData } = supabase.storage.from("restaurant-images").getPublicUrl(filePath)
-
     return publicUrlData.publicUrl
   }
 
@@ -609,6 +610,7 @@ export function RestaurantMenu() {
         const imageUrl = await uploadImageToSupabase(file)
         if (imageUrl) {
           setNewDish({ ...newDish, image: imageUrl })
+          setEditingDish({ ...editingDish, imageUrl })
           console.log(imageUrl, "url")
           setBool(false)
         }
@@ -623,18 +625,13 @@ export function RestaurantMenu() {
   }, [activeUser, activeRestaurant])
 
   useEffect(() => {
-
-
     if (activeRestaurant) {
-      loadData();
+      loadData()
     }
-  }, [activeRestaurant]);
+  }, [activeRestaurant])
 
-  const loadData = async () => {
-    const data = await fetchCategoriesAndItems(activeRestaurant?.uid);
-    const categoriesWithItems = data.filter(category => category.items.length > 0);
-    setDishes(categoriesWithItems);
-  };
+
+  console.log(selectedCategory, "selectedCategory")
 
   return (
     <SidebarProvider>
@@ -642,7 +639,6 @@ export function RestaurantMenu() {
       <SidebarInset>
         <TopNavbar onSearch={handleSearch} searchQuery={searchQuery} />
         <div className="flex min-h-screen flex-col">
-
           <header className="sticky top-0 z-10 border-b bg-background">
             <div className="container mx-auto px-4">
               <div className="flex h-16 items-center justify-between">
@@ -765,14 +761,14 @@ export function RestaurantMenu() {
 
                   {/* User Actions */}
                   {userRole !== "owner" && (
-                    <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/cart")}>
+                    <Button variant="ghost" size="icon" className="relative" >
                       <ShoppingCart className="h-5 w-5" />
                       {Object.keys(cart).length > 0 && (
                         <Badge
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                          variant="outline"
+                          className="absolute -top-2 -right-2 h-5 w-5 bg-red-900 flex items-center justify-center p-0 text-xs"
                         >
-                          {Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)}
+                          {Object.values(cart).reduce((sum, item) => sum + item.quantity, 0)}
                         </Badge>
                       )}
                     </Button>
@@ -824,8 +820,8 @@ export function RestaurantMenu() {
                           <div className="grid gap-2">
                             <Label htmlFor="category">Category</Label>
                             <Select
-                              value={newDish.category}
-                              onValueChange={(value) => setNewDish({ ...newDish, category: value })}
+                              value={activeCategory || ""}
+                              onValueChange={(value) => handleCategorySelect(value || null)}
                             >
                               <SelectTrigger id="category">
                                 <SelectValue placeholder="Select Category" />
@@ -897,7 +893,7 @@ export function RestaurantMenu() {
                 )}
                 {selectedCategory && (
                   <Badge variant="secondary" className="flex items-center gap-1">
-                    Category: {selectedCategory.name}
+                    Category: {activeCategory}
                     <button className="ml-1 rounded-full hover:bg-muted" onClick={() => setSelectedCategory(null)}>
                       ✕
                     </button>
@@ -945,41 +941,48 @@ export function RestaurantMenu() {
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                       >
-                        {filteredDishes.map((dish: any, index: number) => (
-                          <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`${snapshot.isDragging ? "opacity-70" : ""}`}
-                              >
-                                <div className="relative">
-                                  {/* Drag Handle */}
-                                  <div
-                                    {...provided.dragHandleProps}
-                                    className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
-                                  >
-                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                        {filteredDishes.map((dish: any, index: number) =>
+                          dish.items.map((item: any) => (
+                            <Draggable key={item.id.toString()} draggableId={item.id.toString()} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`${snapshot.isDragging ? "opacity-70" : ""}`}
+                                >
+                                  <div className="relative">
+                                    {/* Drag Handle */}
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-full p-1 shadow cursor-move opacity-0 hover:opacity-100 transition-opacity"
+                                    >
+                                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+
+                                    {/* Dish Card */}
+                                    <DishCard
+                                      key={`${item.dishId}-${index}`}
+                                      dish={item} // send individual item
+                                      onEdit={
+                                        userRole === "owner"
+                                          ? () => openEditDialog({ ...item, categoryId: dish.id })
+                                          : undefined
+                                      }
+                                      onDelete={
+                                        userRole === "owner" ? () => handleDeleteDish(item.id, dish.id) : undefined
+                                      }
+                                      onAddToCart={userRole !== "owner" ? addToCart : undefined}
+                                      isInCart={userRole !== "owner" ? cart[item.id] || 0 : 0}
+                                      userRole={userRole}
+                                      category={dish.name}
+                                      onClick={() => openDishDetail(item)}
+                                    />
                                   </div>
-
-                                  {/* Dish Card */}
-                                  <DishCard
-                                    dish={dish}
-                                    category={dish.categoryName} // agar chahiye ho
-                                    onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
-                                    onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                                    isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                                    userRole={userRole}
-                                    onClick={() => openDishDetail(dish)}
-                                  />
                                 </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-
-
+                              )}
+                            </Draggable>
+                          )),
+                        )}
 
                         {provided.placeholder}
                       </div>
@@ -988,20 +991,25 @@ export function RestaurantMenu() {
                 </DragDropContext>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
-                  {filteredDishes.map((dish) => {
-                    return (
-                      <DishCard
-                        dish={dish}
-                        category={dish.name}
-                        onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                        onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
-                        onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                        isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                        userRole={userRole}
-                        onClick={() => openDishDetail(dish)}
-                      />
-                    )
-                  })}
+                  {filteredDishes.map((dish) =>
+                    dish.items.map((item: any, index: any) => {
+                      return (
+                        <DishCard
+                          key={`${item.dishId}-${index}`}
+                          dish={item} // send individual item
+                          onEdit={
+                            userRole === "owner" ? () => openEditDialog({ ...item, categoryId: dish.id }) : undefined
+                          }
+                          onDelete={userRole === "owner" ? () => handleDeleteDish(item.id, dish.id) : undefined}
+                          onAddToCart={userRole !== "owner" ? addToCart : undefined}
+                          isInCart={userRole !== "owner" ? cart[item.id] || 0 : 0}
+                          userRole={userRole}
+                          category={dish.name}
+                          onClick={() => openDishDetail(item)}
+                        />
+                      )
+                    }),
+                  )}
                 </div>
               )
             ) : userRole === "owner" && sortOrder === "custom" ? (
@@ -1009,38 +1017,79 @@ export function RestaurantMenu() {
                 <Droppable droppableId="dishes">
                   {(provided) => (
                     <div className="space-y-4" {...provided.droppableProps} ref={provided.innerRef}>
-                      {filteredDishes.map((dish, index) => (
-                        <Draggable key={dish.id.toString()} draggableId={dish.id.toString()} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={`${snapshot.isDragging ? "opacity-70 bg-accent rounded-lg" : ""}`}
-                            >
-                              <div className="relative">
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 p-2 cursor-move"
-                                >
-                                  <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                                <div className="pl-8">
-                                  <DishCard
-                                    dish={dish}
-                                    category={dish.name}
-                                    onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
-                                    onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                                    isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                                    userRole={userRole}
-                                    onClick={() => openDishDetail(dish)}
-                                  />
+                      {filteredDishes.map((dish, index) =>
+                        dish.items.map((item: any) => (
+                          <Draggable key={item.id} draggableId={item.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`${snapshot.isDragging ? "opacity-70 bg-accent rounded-lg" : ""}`}
+                              >
+                                <div className="relative flex flex-col sm:flex-row overflow-hidden border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                  {/* Drag handle */}
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 p-2 cursor-move bg-background/80 rounded-full"
+                                  >
+                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+
+                                  {/* Image container with left padding for drag handle */}
+                                  <div className="sm:w-48 h-48 sm:h-auto relative pl-10 sm:pl-0">
+                                    <img
+                                      src={item.imageUrl || "/placeholder.svg"}
+                                      alt={item.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    {dish.name && (
+                                      <div className="absolute top-2 left-12 sm:left-2">
+                                        <Badge className="bg-black/70 text-white hover:bg-black/70">{dish.name}</Badge>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Content container */}
+                                  <div className="flex-1 p-4 flex flex-col justify-between">
+                                    <div>
+                                      <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-lg font-semibold">{item.name}</h3>
+                                        <div className="text-lg font-bold">${item.price?.toFixed(2)}</div>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                        {item.description}
+                                      </p>
+                                    </div>
+
+                                    {/* Actions container */}
+                                    <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                      <div className="flex gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => openEditDialog({ ...item, categoryId: dish.id })}
+                                        >
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          onClick={() => handleDeleteDish(item.id, dish.id)}
+                                        >
+                                          Delete
+                                        </Button>
+                                      </div>
+                                      <Button variant="ghost" size="sm" onClick={() => openDishDetail(item)}>
+                                        View Details
+                                      </Button>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
+                            )}
+                          </Draggable>
+                        )),
+                      )}
                       {provided.placeholder}
                     </div>
                   )}
@@ -1048,18 +1097,114 @@ export function RestaurantMenu() {
               </DragDropContext>
             ) : (
               <div className="space-y-4">
-                {filteredDishes.map((dish) => (
-                  <DishCard
-                    dish={dish}
-                    category={dish.name}
-                    onEdit={userRole === "owner" ? () => openEditDialog({ ...dish }) : undefined}
-                    onDelete={userRole === "owner" ? () => handleDeleteDish(dish.items[0].id, dish.id) : undefined}
-                    onAddToCart={userRole !== "owner" ? addToCart : undefined}
-                    isInCart={userRole !== "owner" ? cart[dish.id] || 0 : 0}
-                    userRole={userRole}
-                    onClick={() => openDishDetail(dish)}
-                  />
-                ))}
+                {filteredDishes.map((dish) =>
+                  dish.items.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-col sm:flex-row overflow-hidden border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      {/* Image container - fixed width on larger screens */}
+                      <div className="sm:w-48 h-48 sm:h-auto relative">
+                        <img
+                          src={item.imageUrl || "/placeholder.svg"}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {dish.name && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-black/70 text-white hover:bg-black/70">{dish.name}</Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content container - takes remaining width */}
+                      <div className="flex-1 p-4 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-lg font-semibold">{item.name}</h3>
+                            <div className="text-lg font-bold">${item.price?.toFixed(2)}</div>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
+                        </div>
+
+                        {/* Actions container */}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                          {userRole === "owner" ? (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditDialog({ ...item, categoryId: dish.id })}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteDish(item.id, dish.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center">
+                              {cart[item.id] ? (
+                                <div className="flex items-center border rounded-md">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-none"
+                                    onClick={() => removeFromCart(item.id.toString())}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="24"
+                                      height="24"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-4 w-4"
+                                    >
+                                      <path d="M5 12h14" />
+                                    </svg>
+                                  </Button>
+                                  <span className="w-8 text-center">{cart[item.id].quantity}</span>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => addToCart(item)}>
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="24"
+                                      height="24"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-4 w-4"
+                                    >
+                                      <path d="M5 12h14" />
+                                      <path d="M12 5v14" />
+                                    </svg>
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" onClick={() => addToCart(item)}>
+                                  Add to Cart
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => openDishDetail(item)}>
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )),
+                )}
               </div>
             )}
           </main>
@@ -1072,117 +1217,109 @@ export function RestaurantMenu() {
           <Dialog>
             <DialogTrigger asChild>
               <Button className="relative">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-2 h-4 w-4"
-                >
-                  <circle cx="8" cy="21" r="1" />
-                  <circle cx="19" cy="21" r="1" />
-                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-                </svg>
+                <ShoppingCart className="mr-2 h-4 w-4" />
                 Cart
-                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
-                  {Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)}
-                </span>
+                {totalItems > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-2 -left-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {totalItems}
+                  </Badge>
+                )}
               </Button>
             </DialogTrigger>
+
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Your Cart</DialogTitle>
+                <div className="flex items-center justify-between">
+                  <DialogTitle>Your Cart</DialogTitle>
+                  {totalItems > 0 && (
+                    <Badge variant="destructive" className="h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {totalItems}
+                    </Badge>
+                  )}
+                </div>
                 <DialogDescription>
-                  You have {Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)} item
-                  {Object.values(cart).reduce((sum, quantity) => sum + quantity, 0) !== 1 ? "s" : ""} in your cart.
+                  You have {totalItems} {totalItems === 1 ? "item" : "items"} in your cart.
                 </DialogDescription>
               </DialogHeader>
+              {/* Cart items list */}
               <div className="max-h-[60vh] overflow-y-auto">
-                {dishes
-                  .filter((dish) => cart[dish.id])
-                  .map((dish) => (
-                    <div key={dish.id} className="flex items-center justify-between border-b py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-16 w-16 overflow-hidden rounded-md">
-                          <img
-                            src={dish.image || "/placeholder.svg"}
-                            alt={dish.name}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{dish.name}</h3>
-                          <p className="text-sm text-muted-foreground">${dish.price.toFixed(2)}</p>
-                        </div>
+                {Object.entries(cart).map(([dishId, { dish, quantity }]) => (
+                  <div key={dishId} className="flex items-center justify-between border-b py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative h-16 w-16 overflow-hidden rounded-md">
+                        <img src={dish.imageUrl || "/placeholder.svg"} alt={dish.name} className="h-full w-full object-cover" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center border rounded-md">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-none"
-                            onClick={() => removeFromCart(dish.id)}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                            >
-                              <path d="M5 12h14" />
-                            </svg>
-                            <span className="sr-only">Decrease quantity</span>
-                          </Button>
-                          <span className="w-8 text-center">{cart[dish.id]}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-none"
-                            onClick={() => addToCart(dish.id)}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                            >
-                              <path d="M5 12h14" />
-                              <path d="M12 5v14" />
-                            </svg>
-                            <span className="sr-only">Increase quantity</span>
-                          </Button>
-                        </div>
+                      <div>
+                        <h3 className="font-medium">{dish.name}</h3>
+                        <p className="text-sm text-muted-foreground">${dish.price.toFixed(2)}</p>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center border rounded-md">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-none"
+                          onClick={() => removeFromCart(dishId)}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                          >
+                            <path d="M5 12h14" />
+                          </svg>
+                          <span className="sr-only">Decrease quantity</span>
+                        </Button>
+                        <span className="w-8 text-center">{quantity}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => addToCart(dish)}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                          >
+                            <path d="M5 12h14" />
+                            <path d="M12 5v14" />
+                          </svg>
+                          <span className="sr-only">Increase quantity</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+
               <DialogFooter>
                 <div className="flex w-full items-center justify-between">
                   <div className="text-lg font-semibold">
                     Total: $
-                    {dishes
-                      .filter((dish) => cart[dish.id])
-                      .reduce((total, dish) => total + dish.price * cart[dish.id], 0)
+                    {Object.values(cart)
+                      .reduce((total, { dish, quantity }) => total + dish.price * quantity, 0)
                       .toFixed(2)}
                   </div>
-                  <Button>Checkout</Button>
+                  <Button onClick={() => {
+                    setShowCelebration(true);
+                    setCart({});
+                  }}>
+                    Checkout
+                  </Button>
                 </div>
               </DialogFooter>
             </DialogContent>
@@ -1190,7 +1327,6 @@ export function RestaurantMenu() {
         </div>
       )}
 
-      {/* Edit Dish Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1198,93 +1334,84 @@ export function RestaurantMenu() {
             <DialogDescription>Update the details of this dish.</DialogDescription>
           </DialogHeader>
           {editingDish && (
-  <div className="grid gap-4 py-4">
-    <div className="grid gap-2">
-      <Label htmlFor="edit-name">Name</Label>
-      <Input
-        id="edit-name"
-        value={editingDish?.items[0]?.name}
-        onChange={(e) => 
-          setEditingDish({
-            ...editingDish,  // Preserve the existing properties of editingDish
-            items: [
-              {
-                ...editingDish.items[0],  // Preserve the existing properties of the first item
-                name: e.target.value,  // Update only the name
-              },
-              ...editingDish.items.slice(1), // If you have more items, keep them intact
-            ],
-          })
-        }
-      />
-    </div>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editingDish.name}
+                  onChange={(e) =>
+                    setEditingDish({
+                      ...editingDish,
+                      name: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editingDish.description}
+                  onChange={(e) =>
+                    setEditingDish({
+                      ...editingDish,
+                      description: e.target.value,
+                    })
+                  }
+                />
+              </div>
 
-    <div className="grid gap-2">
-      <Label htmlFor="edit-description">Description</Label>
-      <Textarea
-        id="edit-description"
-        value={editingDish?.items[0]?.description}
-        onChange={(e) =>
-          setEditingDish({
-            ...editingDish,  // Preserve the existing properties of editingDish
-            items: [
-              {
-                ...editingDish.items[0],  // Preserve the existing properties of the first item
-                description: e.target.value,  // Update only the description
-              },
-              ...editingDish.items.slice(1), // If you have more items, keep them intact
-            ],
-          })
-        }
-      />
-    </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-price">Price ($)</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  value={editingDish.price}
+                  onChange={(e) =>
+                    setEditingDish({
+                      ...editingDish,
+                      price: parseFloat(e.target.value),
+                    })
+                  }
+                />
+              </div>
 
-    <div className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="edit-price">Price ($)</Label>
-        <Input
-          id="edit-price"
-          type="number"
-          step="0.01"
-          value={editingDish?.items[0]?.price}
-          onChange={(e) =>
-            setEditingDish({
-              ...editingDish,  // Preserve the existing properties of editingDish
-              items: [
-                {
-                  ...editingDish.items[0],  // Preserve the existing properties of the first item
-                  price: Number.parseFloat(e.target.value),  // Update only the price
-                },
-                ...editingDish.items.slice(1), // If you have more items, keep them intact
-              ],
-            })
-          }
-        />
-      </div>
-    </div>
-
-    <div className="grid gap-2">
-      <Label htmlFor="edit-image">Image</Label>
-      <Input type="file" id="edit-image" accept="image/*" onChange={handleImageChange} />
-      {editingDish.items[0].image && (
-        <img
-          src={editingDish?.items[0].image || "/placeholder.svg"}
-          alt="Preview"
-          className="mt-2 h-20 w-20 rounded-md object-cover"
-        />
-      )}
-    </div>
-  </div>
-)}
+              <div className="grid gap-2">
+                <Label htmlFor="edit-image">Image</Label>
+                <Input
+                  type="file"
+                  id="edit-image"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                {editingDish.imageUrl && (
+                  <img
+                    src={editingDish.imageUrl || "/placeholder.svg"}
+                    alt="Preview"
+                    className="mt-2 h-20 w-20 rounded-md object-cover"
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditDish}>Save Changes</Button>
+            <Button
+              onClick={handleEditDish}
+              disabled={!editingDish?.imageUrl} // Disable the button if image is not selected
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CelebrationDialog showCelebration={showCelebration} setShowCelebration={setShowCelebration} />
 
       {/* Add the detail modal at the end of the component, just before the final closing tag */}
       {/* Dish Detail Modal */}
@@ -1296,20 +1423,20 @@ export function RestaurantMenu() {
               <DialogHeader>
                 <DialogTitle>{selectedDish.name}</DialogTitle>
                 <DialogDescription>
-                  {selectedDish?.items[0]?.name} - ${selectedDish?.items[0]?.price?.toFixed(2)}
+                  {selectedDish?.name} - ${selectedDish?.price?.toFixed(2)}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="grid gap-4 py-4">
                 <div className="relative h-48 w-full overflow-hidden rounded-md">
                   <img
-                    src={selectedDish?.items[0]?.imageUrl || "/placeholder.svg"}
-                    alt={selectedDish?.items[0]?.name}
+                    src={selectedDish?.imageUrl || "/placeholder.svg"}
+                    alt={selectedDish?.name}
                     className="h-full w-full object-cover"
                   />
                 </div>
 
-                <p className="text-sm text-muted-foreground">{selectedDish?.items[0]?.description}</p>
+                <p className="text-sm text-muted-foreground">{selectedDish?.description}</p>
 
                 <div className="border-t pt-4">
                   <h4 className="mb-2 font-medium">Rate this dish</h4>
@@ -1365,81 +1492,4 @@ export function RestaurantMenu() {
   )
 }
 
-export default function RestaurantMenuImprovements() {
-  return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Restaurant Menu Component Improvements</h2>
-
-      <div className="space-y-6">
-        <div className="border rounded-lg p-4 bg-amber-50">
-          <h3 className="text-lg font-semibold mb-2">1. Component Decomposition</h3>
-          <p className="mb-2">
-            The current component is very large (800+ lines). Breaking it down would improve maintainability:
-          </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Extract the dish form (add/edit) into a separate component</li>
-            <li>Create a dedicated FilterBar component</li>
-            <li>Move the cart dialog to its own component</li>
-            <li>Create a dedicated DishDetail modal component</li>
-          </ul>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-blue-50">
-          <h3 className="text-lg font-semibold mb-2">2. State Management</h3>
-          <p className="mb-2">Consider using a more robust state management approach:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Use React Context more extensively or consider Redux/Zustand</li>
-            <li>Create custom hooks for Firebase operations (e.g., useDishes, useCategories)</li>
-            <li>Separate UI state from data state</li>
-          </ul>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-green-50">
-          <h3 className="text-lg font-semibold mb-2">3. Firebase Integration</h3>
-          <p className="mb-2">Improve the Firebase integration:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Use Firebase hooks (react-firebase-hooks) for cleaner code</li>
-            <li>Implement proper error handling for all Firebase operations</li>
-            <li>Add loading states during Firebase operations</li>
-            <li>Consider using Firebase transactions for critical operations</li>
-          </ul>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-purple-50">
-          <h3 className="text-lg font-semibold mb-2">4. Performance Optimization</h3>
-          <p className="mb-2">Optimize for better performance:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Implement virtualization for long lists (react-window or react-virtualized)</li>
-            <li>Memoize expensive computations and component renders</li>
-            <li>Optimize image loading with proper sizing and lazy loading</li>
-            <li>Add pagination for large datasets instead of loading everything at once</li>
-          </ul>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-red-50">
-          <h3 className="text-lg font-semibold mb-2">5. Security Improvements</h3>
-          <p className="mb-2">Enhance security measures:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Implement proper Firebase security rules</li>
-            <li>Add server-side validation for all data operations</li>
-            <li>Use Firebase Auth for proper role-based access control</li>
-            <li>Validate image uploads (size, type, etc.)</li>
-          </ul>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-yellow-50">
-          <h3 className="text-lg font-semibold mb-2">6. UX Enhancements</h3>
-          <p className="mb-2">Improve user experience:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Add proper loading states and skeleton loaders</li>
-            <li>Implement toast notifications for actions</li>
-            <li>Add confirmation dialogs for destructive actions</li>
-            <li>Improve form validation with inline error messages</li>
-            <li>Add keyboard navigation support</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  )
-}
 

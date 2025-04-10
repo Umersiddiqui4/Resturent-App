@@ -1,51 +1,43 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { Avatar, AvatarImage } from "./components/ui/avatar"
-import { Card, CardContent } from "./components/ui/card"
-import { Separator } from "./components/ui/separator"
-import { Star } from "lucide-react"
+import { Avatar, AvatarImage } from "./components/ui/avatar";
+import { Card, CardContent } from "./components/ui/card";
+import { Separator } from "./components/ui/separator";
+import { Star } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { DishCard } from "./components/dish-card-feedback";
 
-interface Review {
-  id: string;
-  userName: string;
-  userInitials: string;
-  userImage?: string;
-  rating: number;
-  date: string;
-  comment: string;
-}
-
-interface CustomerReviewsProps {
-  reviews?: Review[]
-  title?: string
-}
 interface Dish {
   name: string;
   description: string;
   price: number;
   image: string;
 }
+
 interface Feedback {
-  id: number;
-  user: string;
+  id: string;
+  user: {
+    name: string;
+    email: string;
+    role: string;
+    uid: string;
+  };
   rating: number;
   comment: string;
-  selectedDish: Dish
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  selectedDish: Dish;
+  dishId: string;
 }
 
-export default function Customer({
-  reviews = defaultReviews,
-  title = "Customer Reviews",
-}: CustomerReviewsProps) {
-
-  const [feedbacks] = useState<Feedback[]>([]);
-  const [selectedDish, setSelectedDish] = useState<any>([]);
-  const [matchedFeedback, setMatchedFeedback] = useState<any>([]);
-  const [storedFeedbackId, setStoredFeedbackId] = useState<any>([]);
+export default function CustomerReviews() {
+  const [storedFeedbackId, setStoredFeedbackId] = useState<string | null>(null);
+  const [selectedDishFeedbacks, setSelectedDishFeedbacks] = useState<Feedback[]>([]);
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
   const imageUrls = [
     "https://lh3.googleusercontent.com/o4LgaHPHAOBOa_SEi1PywFSN5OLt-1-wSW0DdzyhN93ecj42bSLgFFcXAaY3qf9S01vRAYy-gk-YZ5jWRXVbkRsLOGY=s274",
@@ -60,89 +52,79 @@ export default function Customer({
     "https://lh3.googleusercontent.com/lNXUwGZf6b2_brqsNLOgvziyB4bi5S7BDcxvM9gT292KoayzU0kQs7tlklMEOIg-i1n2p92rlor8FV1quAz1rehB=s248"
   ];
 
-
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme-preference")
+    const savedId = localStorage.getItem("feedbackId")?.trim();
 
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark")
-    } else if (savedTheme === "light") {
-      document.documentElement.classList.remove("dark")
-    } else {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        document.documentElement.classList.add("dark")
-      }
+    if (savedId) {
+      setStoredFeedbackId(savedId);
     }
-    setStoredFeedbackId(JSON.parse(localStorage.getItem("feedbackId")?.trim() || ""))
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if (!storedFeedbackId) return;
-    const feedbackArray = Object.entries(feedbacks).map(([id, data]) => ({
-      id: id.trim(),
-      ...(data as any),
-    }));
-    const matchedFeedback = feedbackArray.filter((feedback) => feedback.id === storedFeedbackId)
-    setMatchedFeedback(matchedFeedback);
-  }, [feedbacks]);
-
-  useEffect(() => {
-    if (matchedFeedback) {
-      setSelectedDish(matchedFeedback); // ✅ Selected dish update karein
-    }
-  }, [feedbacks, matchedFeedback]);
-
-  useEffect(() => {
-    const fetchDishFeedback = async (dishId: string) => {
-      if (!dishId || typeof dishId !== "string") {
-        console.error("Invalid dishId:", dishId); // ✅ Debugging ke liye
-        return;
-      }
+    const fetchFeedback = async () => {
+      if (!storedFeedbackId) return;
 
       try {
-        const feedbackRef = collection(db, "dishFeedback", dishId, "comments"); // ✅ Subcollection reference
+        const feedbackRef = collection(db, "dishFeedback", storedFeedbackId, "comments");
         const querySnapshot = await getDocs(feedbackRef);
 
-        const feedbackList = querySnapshot.docs.map(doc => ({
+        const feedbackList: Feedback[] = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })) as Feedback[];
 
-        setSelectedDish(feedbackList)
-        return feedbackList;
+        setSelectedDishFeedbacks(feedbackList);
+
+        if (feedbackList.length > 0) {
+          setSelectedDish(feedbackList[0].selectedDish);
+        }
 
       } catch (error) {
         console.error("Error fetching feedback:", error);
       }
     };
-    fetchDishFeedback(storedFeedbackId);
+
+    fetchFeedback();
   }, [storedFeedbackId]);
+  console.log(selectedDish, "selectedDishFeedbacks");
+  console.log(storedFeedbackId, "storedFeedbackId");
+  console.log(selectedDishFeedbacks, "selectedDishFeedbacks");
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 md:py-8 transition-colors duration-200 bg-background text-foreground">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-xl md:text-2xl font-bold">
-          {title} ({reviews.length})
+          Customer Reviews ({selectedDishFeedbacks.length})
         </h2>
       </div>
-      {selectedDish.length > 0 && <DishCard dish={selectedDish[0]} />}
+
+      {selectedDishFeedbacks[0]?.dishId && (
+        <DishCard dish={selectedDishFeedbacks[0]?.dishId} />
+      )}
+
+
+
 
       <div className="space-y-4 md:space-y-6">
-        {selectedDish && Object.keys(selectedDish).length > 0 ? (
-          Object.values(selectedDish).map((review: any, index) => (
+        {selectedDishFeedbacks.length > 0 ? (
+          selectedDishFeedbacks.map((review, index) => (
             <div key={review.id}>
               <Card className="overflow-hidden border dark:border-gray-700">
-                <CardContent className="p-4 ">
+                <CardContent className="p-4">
                   <div className="flex sm:flex-row sm:items-start gap-4">
                     <Avatar className="h-20 w-20 border dark:border-gray-600 shrink-0">
-                      <AvatarImage src={imageUrls[index]} alt={review.user.name} />
-
+                      <AvatarImage
+                        src={imageUrls[index % imageUrls.length]}
+                        alt={review.user?.name || "Anonymous"}
+                      />
                     </Avatar>
 
                     <div className="flex-1 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                          <h3 className="font-medium">{review.user.name}</h3>
+                          <h3 className="font-medium">
+                            {review.user?.name || "Anonymous"}
+                          </h3>
                           <p className="text-xs sm:text-sm text-muted-foreground">
                             {review.createdAt?.seconds
                               ? new Date(review.createdAt.seconds * 1000).toLocaleString()
@@ -155,21 +137,25 @@ export default function Customer({
                             <Star
                               key={i}
                               className={`w-4 h-4 sm:w-5 sm:h-5 ${i < review.rating
-                                  ? "fill-yellow-400 text-yellow-400 dark:fill-yellow-300 dark:text-yellow-300"
-                                  : "fill-muted stroke-muted-foreground"
+                                ? "fill-yellow-400 text-yellow-400 dark:fill-yellow-300 dark:text-yellow-300"
+                                : "fill-muted stroke-muted-foreground"
                                 }`}
                             />
                           ))}
                         </div>
                       </div>
 
-                      <p className="text-lg sm:text-2xl md:xl leading-relaxed">{review.comment}</p>
+                      <p className="text-lg sm:text-2xl md:xl leading-relaxed">
+                        {review.comment}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {index < reviews.length - 1 && <Separator className="my-4 md:my-6 md:hidden" />}
+              {index < selectedDishFeedbacks.length - 1 && (
+                <Separator className="my-4 md:my-6 md:hidden" />
+              )}
             </div>
           ))
         ) : (
@@ -177,46 +163,5 @@ export default function Customer({
         )}
       </div>
     </div>
-  )
+  );
 }
-
-// Sample data for demonstration
-const defaultReviews: Review[] = [
-  {
-    id: "1",
-    userName: "Sarah Johnson",
-    userInitials: "SJ",
-    rating: 5,
-    date: "March 15, 2025",
-    comment:
-      "This product exceeded my expectations! The quality is outstanding and it arrived earlier than expected. I've already recommended it to several friends.",
-  },
-  {
-    id: "2",
-    userName: "Michael Chen",
-    userInitials: "MC",
-    rating: 4,
-    date: "March 10, 2025",
-    comment:
-      "Very good product overall. The only reason I'm not giving 5 stars is because the color is slightly different from what was shown in the pictures. Otherwise, it works perfectly and the customer service was excellent.",
-  },
-  {
-    id: "3",
-    userName: "Emily Rodriguez",
-    userInitials: "ER",
-    rating: 3,
-    date: "March 5, 2025",
-    comment:
-      "Decent product for the price. Shipping was fast and the packaging was secure. It does what it's supposed to do, but I think there are better options available if you're willing to spend a bit more.",
-  },
-  {
-    id: "4",
-    userName: "David Wilson",
-    userInitials: "DW",
-    rating: 5,
-    date: "February 28, 2025",
-    comment:
-      "Absolutely love this! It's exactly what I was looking for and the quality is top-notch. The attention to detail is impressive and it's clear that a lot of thought went into the design. Will definitely purchase from this company again.",
-  },
-]
-

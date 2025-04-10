@@ -3,11 +3,11 @@ export interface Dish {
   name: any
   description: string
   price: number
-  category: string
+  category?: string
   image: string
-  displayOrder: number;
+  displayOrder?: number;
   restaurent?: string | undefined
-  createdAt: string;
+  createdAt?: string;
   selectedDish?: any
   restaurantId?: string
   imageUrl?: string
@@ -16,14 +16,14 @@ export interface Dish {
 
 
 export interface DishCardProps {
-  dish: Dish
+  dish:string
   onEdit?: () => void
   onDelete?: () => void
   onAddToCart?: (dishId: number) => void
-  isInCart?: number
+  isInCart?: any
   userRole?: "owner" | "user" | "guest"
   onClick?: () => void
-  category: string
+  category?: string
 }
 
 export interface DishListProps extends Omit<DishCardProps, "dish"> {
