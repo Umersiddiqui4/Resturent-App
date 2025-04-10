@@ -161,15 +161,7 @@ export function RestaurantMenu() {
 
 
 
-  useEffect(() => {
-    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
-    const storedRest = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
-    setActiveUser(storedOwners);
-    setActiveRestaurant(storedRest);
-    if (storedOwners && storedOwners.role) {
-      setUserRole(storedOwners.role);
-    }
-  }, []);
+  
 
 
   const fetchSubCategories = async () => {
@@ -607,6 +599,16 @@ export function RestaurantMenu() {
       loadData()
     }
   }, [activeRestaurant])
+
+  useEffect(() => {
+    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+    const storedRest = JSON.parse(localStorage.getItem("activeRestaurant") || "{}");
+    setActiveUser(storedOwners);
+    setActiveRestaurant(storedRest);
+    if (storedOwners && storedOwners.role) {
+      setUserRole(storedOwners.role);
+    }
+  }, []);
 
   return (
     <SidebarProvider>

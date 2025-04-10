@@ -29,11 +29,6 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
   const [showPassword, setShowPassword] = useState(false)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" })
 
-  useEffect(() => {
-    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
-    setActiveUser(storedOwners);
-  }, []);
-
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev)
   }
@@ -96,6 +91,11 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
 
     }
   }, [activeUser])
+
+  useEffect(() => {
+    const storedOwners = JSON.parse(localStorage.getItem("activeUser") || "{}");
+    setActiveUser(storedOwners);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted p-6 md:p-10 dark:bg-gray-900">
