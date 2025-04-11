@@ -36,6 +36,8 @@ export interface User {
   restaurantName?: string | undefined;
   uid: string;
   email: string; 
+  id?: string;
+  avatar?: string;
 }
 export interface Restaurent {
   createdAt: object

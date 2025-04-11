@@ -4,6 +4,7 @@ import { RestaurantMenu } from "@/components/components/restaurant-menu";
 import { Routes, Route } from "react-router-dom";
 import RestaurentSelection from "@/components/RestaurentSelection";
 import Customer from "@/components/Customer";
+import ProfileForm from "@/components/Profile";
 
 export default function AppRouter() {
 
@@ -14,6 +15,7 @@ export default function AppRouter() {
       <Route path="/signup" element={<RegisterForm />} />
       <Route path="/customer" element={<Customer />} />
       <Route path="/restaurent-selection" element={<RestaurentSelection />} />
+      <Route path="/profile" element={<ProfileForm />} />
     </Routes>
   );
 }
