@@ -88,8 +88,6 @@ export default function CustomerReviews() {
 
     fetchFeedback();
   }, [storedFeedbackId]);
-  console.log(selectedDishFeedbacks, "selectedDishFeedbacks");
-  
   
 
   return (
@@ -103,10 +101,6 @@ export default function CustomerReviews() {
       {selectedDishFeedbacks[0]?.dishId && (
         <DishCard dish={selectedDishFeedbacks[0]?.dishId} />
       )}
-
-
-
-
       <div className="space-y-4 md:space-y-6">
         {selectedDishFeedbacks.length > 0 ? (
           selectedDishFeedbacks.map((review: any, index) => (

@@ -3,15 +3,19 @@ import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
 import { Avatar, AvatarImage } from "./components/ui/avatar";
-import { useAppContext } from "@/context/AppContext";
 import { supabase } from "./lib/supabaseClient"; // Supabase client import
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig"; // Firebase config import
 import { FloatingPaths } from "./components/FloatingPaths";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import { setActiveUser } from "@/redux/slices/appSlice";
 
 export default function ProfileForm() {
-  const { activeUser, setActiveUser } = useAppContext();
+  const dispatch = useDispatch();
+  const activeUser = useSelector((state: RootState) => state.app.activeUser);
   const [name, setName] = useState(activeUser?.name || "");
   const [avatar] = useState(activeUser?.avatar || "");
   const [imageFile, setImageFile] = useState<any>(null);
@@ -19,7 +23,7 @@ export default function ProfileForm() {
   const navigate = useNavigate();
   useEffect(() => {
     const storedOwnersRaw = localStorage.getItem("activeUser");
-    setActiveUser(JSON.parse(storedOwnersRaw || "{}"));
+    dispatch(setActiveUser(JSON.parse(storedOwnersRaw || "{}")));
   }, [setActiveUser]);
 
   if (!activeUser) {
@@ -81,7 +85,7 @@ export default function ProfileForm() {
       });
 
       // Update activeUser state and localStorage
-      setActiveUser(updatedUser);
+      dispatch(setActiveUser(updatedUser));
       localStorage.setItem("activeUser", JSON.stringify(updatedUser));
       // alert("Profile updated successfully!");
       navigate("/dashboard");

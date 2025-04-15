@@ -53,13 +53,16 @@ import { Badge } from "./ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
-import { useAppContext } from "../../context/AppContext"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabaseClient"
 import { getCategoriesFromFirestore } from "../api/useRestaurants"
 import fetchCategoriesAndItems from "../api/categoreis&item"
 import { uploadItemsToCategory } from "../api/categoriesUpload"
 import { CelebrationDialog } from "./ui/celebration"
+import { useDispatch } from "react-redux"
+import { useSelector } from "react-redux"
+import { RootState } from "@/redux/store"
+import { setActiveCategory, setActiveRestaurant, setActiveUser } from "@/redux/slices/appSlice"
 
 // Sample dish data
 const initialDishes: Dish[] = [
@@ -154,9 +157,10 @@ export function RestaurantMenu() {
   const [dishRatings] = useState<Record<number, { rating: number; comment: string }>>({})
   const [showCelebration, setShowCelebration] = useState(false)
 
-  const { activeUser, setActiveUser } = useAppContext()
-  const { activeCategory, setActiveCategory } = useAppContext()
-  const { activeRestaurant, setActiveRestaurant } = useAppContext()
+  const dispatch = useDispatch();
+const { activeUser, activeCategory, activeRestaurant } = useSelector(
+  (state: RootState) => state.app
+);
   const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0)
 
 
@@ -463,7 +467,7 @@ export function RestaurantMenu() {
   useEffect(() => {
     fetchAllDishes()
     setCart({})
-    setActiveCategory("")
+    dispatch(setActiveCategory(""))
     fetchSubCategories()
   }, [activeRestaurant])
 
@@ -479,7 +483,7 @@ export function RestaurantMenu() {
   const handleCategorySelect = (category: any | null) => {
     setSelectedCategoryId(category.id)
     setSelectedCategory(category.id)
-    setActiveCategory(category.name)
+    dispatch(setActiveCategory(category.name))
   }
   const handleCategorySelectForSideBaR = () => {
     setSelectedCategory(activeCategory)
@@ -613,17 +617,17 @@ export function RestaurantMenu() {
         ? JSON.parse(storedRestRaw)
         : {};
   
-      setActiveUser(storedOwners);
-      setActiveRestaurant(storedRest);
+      dispatch(setActiveUser(storedOwners));
+      dispatch(setActiveRestaurant(storedRest));
   
       if (storedOwners?.role) {
         setUserRole(storedOwners.role);
       }
     } catch (err) {
       console.error("Error parsing localStorage:", err);
-      setActiveUser({ role: "", name: "", restaurantName: "", uid: "", email: "" });
-      setActiveRestaurant({createdAt: {}, email: "", name: "", owner_Id: "",
-        uid: ""});
+      dispatch(setActiveUser({ role: "", name: "", restaurantName: "", uid: "", email: "" }));
+      dispatch(setActiveRestaurant({createdAt: {}, email: "", name: "", owner_Id: "",
+        uid: ""}));
     }
   }, []);
   

@@ -38,7 +38,6 @@ import {
   SidebarRail,
 } from "./ui/sidebar"
 import { Button } from "./ui/button"
-import { useAppContext } from "../../context/AppContext"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +58,10 @@ import MenuItem from "@mui/material/MenuItem"
 import { getCategoriesFromFirestore, useRestaurants } from "../api/useRestaurants"
 import ListSkeleton from "../comp-manager/list_skeleton"
 import { createCategory } from "../api/categoriesUpload"
+import { useDispatch } from "react-redux"
+import { RootState } from "@/redux/store"
+import { useSelector } from "react-redux"
+import { setActiveCategory, setActiveRestaurant } from "@/redux/slices/appSlice"
 
 // Define all available icons
 const iconOptions = {
@@ -149,10 +152,10 @@ type Category = {
 };
 
 export function AppSidebar() {
-  const { activeCategory, setActiveCategory } = useAppContext()
-  const { activeUser } = useAppContext()
-  const { owners } = useAppContext()
-  const { activeRestaurant, setActiveRestaurant } = useAppContext()
+  const dispatch = useDispatch();
+const { activeUser, activeCategory, activeRestaurant, owners } = useSelector(
+  (state: RootState) => state.app
+);
   const [customCategories, setCustomCategories] = useState<Array<{ name?: string; icon?: any }>>([])
   const [newCategoryName, setNewCategoryName] = useState("")
   const [selectedIcon, setSelectedIcon] = useState<keyof typeof iconOptions>("Other")
@@ -232,7 +235,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={category.name === activeCategory}
-                    onClick={() => setActiveCategory("")}
+                    onClick={() => dispatch(setActiveCategory(""))}
                   >
                     <a href="#" className={cn("flex items-center")}>
                       <category.icon className="mr-2 h-4 w-4" />
@@ -265,7 +268,7 @@ export function AppSidebar() {
   if (error) return <p>Error: {error}</p>
 
   const handleRestaurantChange = (restaurant: any) => {
-    setActiveRestaurant(restaurant)
+    dispatch(setActiveRestaurant(restaurant))
     localStorage.setItem("activeRestaurant", JSON.stringify(restaurant))
   }
 
@@ -333,7 +336,7 @@ export function AppSidebar() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {owners?.length ? (
-                  owners.map((restaurant) => (
+                  owners.map((restaurant : any) => (
                     <DropdownMenuItem
                       key={restaurant.name}
                       className={cn(
@@ -383,7 +386,7 @@ export function AppSidebar() {
                     asChild
                     isActive={category.name === activeCategory}
                     onClick={() =>
-                      setActiveCategory(category.name === "All Items" ? null : category.name)
+                      dispatch(setActiveCategory(category.name === "All Items" ? null : category.name))
                     }
                   >
                     <a href="#" className={cn("flex items-center")}>

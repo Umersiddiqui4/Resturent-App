@@ -12,8 +12,11 @@ import {
 } from "../components/ui/dropdown-menu-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { useTheme } from "./theme-provider"
-import { useAppContext } from "../../context/AppContext"
 import { useNavigate } from "react-router-dom"
+import { useDispatch } from "react-redux"
+import { useSelector } from "react-redux"
+import { RootState } from "@/redux/store"
+import { setActiveUser } from "@/redux/slices/appSlice"
 
 
 
@@ -31,7 +34,8 @@ export function TopNavbar({ onSearch, searchQuery = "" }: TopNavbarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [profileName, setProfileName] = useState("");
 
-const { activeUser, setActiveUser } = useAppContext();
+  const activeUser = useSelector((state: RootState) => state.app.activeUser);
+const dispatch = useDispatch();
 
 useEffect(() => {
   if (activeUser?.name) {
@@ -50,7 +54,7 @@ useEffect(() => {
 function logOut() {
   localStorage.removeItem("activeRestaurant"); 
   localStorage.removeItem("activeUser"); 
-  setActiveUser(null);
+  dispatch(setActiveUser(null));
   navigate("/")
 }
 

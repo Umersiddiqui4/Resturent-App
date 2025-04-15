@@ -38,6 +38,7 @@ export interface User {
   email: string; 
   id?: string;
   avatar?: string;
+  createdAt?: any;
 }
 export interface Restaurent {
   createdAt: object

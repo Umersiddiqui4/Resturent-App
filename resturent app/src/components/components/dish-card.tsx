@@ -5,7 +5,8 @@ import { Button } from "./ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "./ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { useAppContext } from "@/context/AppContext"
+import { RootState } from "@/redux/store"
+import { useSelector } from "react-redux"
 
 export function DishCard({
   dish,
@@ -16,8 +17,10 @@ export function DishCard({
   onClick,
   category
 }: any) {
-  const { activeUser } = useAppContext();
-  const { activeRestaurant } = useAppContext()
+  const { activeUser, activeRestaurant } = useSelector
+  (
+    (state: RootState) => state.app
+  );
 
   return (
     <Card className="overflow-hidden ">

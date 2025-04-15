@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { collection,addDoc, setDoc , getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig"; 
-import { useAppContext } from "@/context/AppContext";
+import { useDispatch } from "react-redux";
+import { setOwners } from "@/redux/slices/appSlice";
 
 export function useRestaurants() {
   const [restaurants, setRestaurants] = useState<any[] | null>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { setOwners } = useAppContext()
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -20,7 +21,7 @@ export function useRestaurants() {
         }));
 
         setRestaurants(restaurantList);
-        setOwners(restaurantList)
+        dispatch(setOwners(restaurantList))
       } catch (error) {
         console.error("Error fetching restaurants:", error);
         setError("Failed to fetch restaurants");

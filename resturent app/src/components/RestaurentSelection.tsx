@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppContext } from "@/context/AppContext";
 import { useRestaurants } from "./api/useRestaurants";
 import LoadingSkeleton from "./comp-manager/Loading_skeleton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 
 function RestaurentSelection() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const { owners } = useAppContext()
+  const owners = useSelector((state: RootState) => state.app.owners);
   const navigate = useNavigate();
   const [value, setValue] = useState<any>("")
   const { loading, error } = useRestaurants();

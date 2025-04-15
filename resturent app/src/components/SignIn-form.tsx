@@ -10,19 +10,22 @@ import { ThemeToggle } from "./components/ui/Theme-toggle"
 import { Eye, EyeOff } from "lucide-react"
 import MuiSnackbar from "./components/ui/MuiSnackbar"
 import { useNavigate } from "react-router-dom"
-import { useAppContext } from "../context/AppContext"
 import { auth, db } from "../firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { User } from "../components/comp-manager/types"
+import { RootState } from "@/redux/store"
+import { useSelector } from "react-redux"
+import { useDispatch } from "react-redux"
+import { setActiveRestaurant, setActiveUser } from "@/redux/slices/appSlice"
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(" ")
 }
 
 export default function SignIn({ className, ...props }: React.ComponentProps<"div">) {
-  const { activeUser, setActiveUser } = useAppContext();
-  const { setActiveRestaurant } = useAppContext();
+  const dispatch = useDispatch();
+  const activeUser = useSelector((state: RootState) => state.app.activeUser);
   const navigate = useNavigate();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -50,7 +53,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
         return;
       }
       const userData = userDoc.data() as User; // ✅ Type assertion for TypeScript
-      setActiveUser(userData);
+      dispatch(setActiveUser(userData));
       // 🔹 Step 4: Save to LocalStorage for session persistence
       localStorage.setItem("activeUser", JSON.stringify(userData));
       // 🔹 Step 5: Show success message & navigate
@@ -63,7 +66,7 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
           return;
         }
         const userData: any = userDoc.data() as User;
-        setActiveRestaurant(userData);
+        dispatch(setActiveRestaurant(userData));
         localStorage.setItem("activeRestaurant", JSON.stringify(userData));
 
         navigate("/dashboard");
@@ -96,10 +99,10 @@ export default function SignIn({ className, ...props }: React.ComponentProps<"di
     try {
       const raw = localStorage.getItem("activeUser");
       const storedOwners = raw && raw !== "undefined" ? JSON.parse(raw) : {};
-      setActiveUser(storedOwners);
+      dispatch(setActiveUser(storedOwners));
     } catch (err) {
       console.error("Failed to parse activeUser from localStorage:", err);
-      setActiveUser({ role: "", name: "", restaurantName: "", uid: "", email: "" });
+      dispatch(setActiveUser({ role: "", name: "", restaurantName: "", uid: "", email: "" }));
     }
   }, []);
   
