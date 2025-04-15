@@ -1,6 +1,5 @@
-// 1. Create Redux Slice: src/redux/slices/appSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User, Restaurent } from '@/components/comp-manager/types';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface AppState {
   activeUser: User | null;
@@ -20,16 +19,16 @@ const appSlice = createSlice({
   name: 'app',
   initialState,
   reducers: {
-    setActiveUser(state, action: PayloadAction<User | null>) {
+    setActiveUser(state: any, action: PayloadAction<User | null>) {
       state.activeUser = action.payload;
     },
-    setActiveCategory(state, action: PayloadAction<string | null>) {
+    setActiveCategory(state: any, action: PayloadAction<string | null>) {
       state.activeCategory = action.payload;
     },
-    setActiveRestaurant(state, action: PayloadAction<Restaurent | null>) {
+    setActiveRestaurant(state: any, action: PayloadAction<Restaurent | null>) {
       state.activeRestaurant = action.payload;
     },
-    setOwners(state, action: PayloadAction<User[]>) {
+    setOwners(state: any, action: PayloadAction<User[]>) {
       state.owners = action.payload;
     },
   },

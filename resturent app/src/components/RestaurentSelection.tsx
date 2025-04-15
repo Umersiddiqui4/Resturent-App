@@ -78,7 +78,7 @@ function RestaurentSelection() {
         </h1>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-6 backdrop-blur-sm bg-white/10 p-4 md:p-6 rounded-xl">
-          {owners.map((owner, index) => (
+          {owners.map((owner: any, index : any) => (
             <div
               key={index}
               className="relative aspect-square overflow-hidden rounded-lg cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
