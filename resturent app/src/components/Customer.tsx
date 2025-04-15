@@ -88,6 +88,8 @@ export default function CustomerReviews() {
 
     fetchFeedback();
   }, [storedFeedbackId]);
+  console.log(selectedDishFeedbacks, "selectedDishFeedbacks");
+  
   
 
   return (
@@ -107,14 +109,14 @@ export default function CustomerReviews() {
 
       <div className="space-y-4 md:space-y-6">
         {selectedDishFeedbacks.length > 0 ? (
-          selectedDishFeedbacks.map((review, index) => (
+          selectedDishFeedbacks.map((review: any, index) => (
             <div key={review.id}>
               <Card className="overflow-hidden border dark:border-gray-700">
                 <CardContent className="p-4">
                   <div className="flex sm:flex-row sm:items-start gap-4">
                     <Avatar className="h-20 w-20 border dark:border-gray-600 shrink-0">
                       <AvatarImage
-                        src={imageUrls[index % imageUrls.length]}
+                        src={review?.user?.avatar ? review?.user?.avatar : imageUrls[index % imageUrls.length]}
                         alt={review.user?.name || "Anonymous"}
                       />
                     </Avatar>
