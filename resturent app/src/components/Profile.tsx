@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 export default function ProfileForm() {
   const { activeUser, setActiveUser } = useAppContext();
   const [name, setName] = useState(activeUser?.name || "");
-  const [avatar, setAvatar] = useState(activeUser?.avatar || "");
+  const [avatar] = useState(activeUser?.avatar || "");
   const [imageFile, setImageFile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
