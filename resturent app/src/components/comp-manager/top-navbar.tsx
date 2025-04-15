@@ -108,7 +108,7 @@ function logOut() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+                <AvatarImage src={activeUser?.avatar} alt="User" />
                 <AvatarFallback>{profileName ? profileName : "?" }</AvatarFallback>
               </Avatar>
               <span className="sr-only">User menu</span>
